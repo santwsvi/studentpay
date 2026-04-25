@@ -1,4 +1,4 @@
-## Diagrama de Componentes (UML) — Sistema de Moeda Estudantil (Release 1)
+## Diagrama de Componentes (UML) — StudentPay
 
 O diagrama abaixo apresenta a **visão de componentes** do sistema (arquitetura em alto nível), alinhada ao padrão **MVC em camadas**:
 - **Apresentação (View)**: interface Web/App que consome a API.
