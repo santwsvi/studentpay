@@ -20,6 +20,14 @@ subgraph Clientes["Clientes"]
 end
 
 %% =========================
+%% Interfaces da API (Fornecidas pelo Backend, Requeridas pela UI)
+%% =========================
+IAuth((IAuthAPI))
+IAluno((IAlunoAPI))
+IProf((IProfessorAPI))
+IEmp((IEmpresaAPI))
+
+%% =========================
 %% Backend (MVC + Camadas)
 %% =========================
 subgraph Backend["Sistema de Moeda Estudantil (Backend)"]
@@ -32,6 +40,12 @@ subgraph Backend["Sistema de Moeda Estudantil (Backend)"]
     ProfessorC["<<controller>> ProfessorController"]
     EmpresaC["<<controller>> EmpresaController"]
   end
+
+  %% --- Interfaces de Serviço ---
+  IAuthS((IAuthService))
+  IDistS((IDistribuicaoService))
+  IResgS((IResgateService))
+  IEmailS((IEmailService))
 
   %% --- Aplicação / Services ---
   subgraph Services["Camada de Aplicação (Services / Casos de Uso)"]
@@ -46,10 +60,13 @@ subgraph Backend["Sistema de Moeda Estudantil (Backend)"]
     DomModel["<<model>> Entidades e VOs\nUsuario, Aluno, Professor, EmpresaParceira,\nCarteiraMoedas, TransacaoMoeda,\nEnvioMoedas, CreditoSemestral,\nResgateVantagem, Vantagem,\nSemestre, Endereco, CodigoResgate,\nEnums (TipoTransacao, StatusResgate)"]
   end
 
+  %% --- Interfaces de Repositório ---
+  IRepo((IRepositories))
+
   %% --- Persistência / Infra ---
   subgraph Persistencia["Infraestrutura de Persistência"]
     Repos["<<component>> Repositórios/DAO\n(Usuarios, Carteiras, Transações,\nInstituições/Cursos, Vantagens, Resgates)"]
-    DB["<<database>> Banco de Dados"]
+    DB[("\n<<database>>\nBanco de Dados\n")]
   end
 end
 
@@ -62,36 +79,58 @@ subgraph Externos["Serviços Externos"]
 end
 
 %% =========================
-%% Fluxos principais
+%% Fluxos principais e Comunicação
 %% =========================
-UI -->|HTTP/HTTPS| AuthC
-UI -->|HTTP/HTTPS| AlunoC
-UI -->|HTTP/HTTPS| ProfessorC
-UI -->|HTTP/HTTPS| EmpresaC
 
-AuthC --> AuthS
-AlunoC --> AuthS
-ProfessorC --> AuthS
-EmpresaC --> AuthS
+%% UI consome API (Requeridas)
+UI -->|HTTPS / REST| IAuth
+UI -->|HTTPS / REST| IAluno
+UI -->|HTTPS / REST| IProf
+UI -->|HTTPS / REST| IEmp
 
-ProfessorC --> DistS
-AlunoC --> ResgS
-EmpresaC --> ResgS
+%% Front-end também pode buscar imagens diretamente (opcional dependendo da arquitetura)
+UI -.->|HTTPS / GET| Files
 
-DistS --> DomModel
-ResgS --> DomModel
-AuthS --> DomModel
+%% Controllers expõem API (Fornecidas)
+IAuth --- AuthC
+IAluno --- AlunoC
+IProf --- ProfessorC
+IEmp --- EmpresaC
 
-DistS --> EmailS
-ResgS --> EmailS
+%% Controllers consomem Services
+AuthC -->|In-Process / DTOs| IAuthS
+AlunoC -->|In-Process / DTOs| IAuthS
+AlunoC -->|In-Process / DTOs| IResgS
+ProfessorC -->|In-Process / DTOs| IAuthS
+ProfessorC -->|In-Process / DTOs| IDistS
+EmpresaC -->|In-Process / DTOs| IAuthS
+EmpresaC -->|In-Process / DTOs| IResgS
 
-AuthS --> Repos
-DistS --> Repos
-ResgS --> Repos
-EmailS --> Repos
+%% Services expõem Interfaces
+IAuthS --- AuthS
+IDistS --- DistS
+IResgS --- ResgS
+IEmailS --- EmailS
 
-Repos --> DB
+%% Services chamam uns aos outros
+DistS -->|In-Process| IEmailS
+ResgS -->|In-Process| IEmailS
 
-EmailS -->|SMTP/API| SMTP
-EmpresaC -.->|upload/URL| Files
-AlunoC -.->|consulta| Files
+%% Services consomem Domínio
+DistS -->|In-Process / Instanciação| DomModel
+ResgS -->|In-Process / Instanciação| DomModel
+AuthS -->|In-Process / Instanciação| DomModel
+
+%% Services consomem Repositórios
+AuthS -->|In-Process| IRepo
+DistS -->|In-Process| IRepo
+ResgS -->|In-Process| IRepo
+EmailS -->|In-Process| IRepo
+
+%% Repositório expõe Interface
+IRepo --- Repos
+
+%% Persistência e Integrações Externas
+Repos -->|TCP/IP / SQL| DB
+EmailS -->|SMTP / TCP| SMTP
+Repos -->|HTTPS / API REST| Files
