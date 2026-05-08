@@ -9,7 +9,7 @@ Cada história inclui **Critérios de Aceitação** (objetivos e verificáveis).
 
 ---
 
-## 1. Módulo do Aluno
+
 
 ### US01 - Cadastro de Aluno
 **Como** Aluno,  
@@ -19,6 +19,8 @@ Cada história inclui **Critérios de Aceitação** (objetivos e verificáveis).
 * **Critério de Aceitação 1:** O sistema deve permitir apenas a seleção de instituições de ensino que já estejam pré-cadastradas no banco de dados.
 * **Critério de Aceitação 2:** O sistema deve validar se todos os campos obrigatórios foram preenchidos antes de finalizar o registro.
 
+---
+
 ### US02 - Consulta de Extrato (Aluno)
 **Como** Aluno,  
 **quero** visualizar o extrato da minha conta,  
@@ -26,6 +28,8 @@ Cada história inclui **Critérios de Aceitação** (objetivos e verificáveis).
 
 * **Critério de Aceitação 1:** O extrato deve exibir a origem de cada moeda recebida (nome do professor e motivo).
 * **Critério de Aceitação 2:** O extrato deve listar as transações de troca por vantagens, indicando a data e o valor debitado.
+
+---
 
 ### US03 - Troca de Moedas por Vantagens
 **Como** Aluno,  
@@ -37,7 +41,7 @@ Cada história inclui **Critérios de Aceitação** (objetivos e verificáveis).
 
 ---
 
-## 2. Módulo do Professor
+
 
 ### US04 - Distribuição de Moedas
 **Como** Professor,  
@@ -46,6 +50,8 @@ Cada história inclui **Critérios de Aceitação** (objetivos e verificáveis).
 
 * **Critério de Aceitação 1:** O sistema deve validar se o professor possui saldo de moedas suficiente no semestre antes de concluir o envio.
 * **Critério de Aceitação 2:** O preenchimento da mensagem de motivo deve ser obrigatório e o aluno deve receber uma notificação por e-mail imediatamente após o envio.
+
+---
 
 ### US05 - Gestão de Saldo Semestral
 **Como** Professor,  
@@ -57,7 +63,7 @@ Cada história inclui **Critérios de Aceitação** (objetivos e verificáveis).
 
 ---
 
-## 3. Módulo da Empresa Parceira
+
 
 ### US06 - Cadastro de Vantagens
 **Como** Empresa Parceira,  
@@ -69,7 +75,7 @@ Cada história inclui **Critérios de Aceitação** (objetivos e verificáveis).
 
 ---
 
-## 4. Requisitos Transversais (Segurança)
+
 
 ### US07 - Autenticação de Usuários
 **Como** Usuário do Sistema (Aluno, Professor ou Empresa),  
@@ -78,3 +84,55 @@ Cada história inclui **Critérios de Aceitação** (objetivos e verificáveis).
 
 * **Critério de Aceitação 1:** O sistema deve bloquear o acesso e exibir uma mensagem de erro caso as credenciais (login/senha) sejam inválidas.
 * **Critério de Aceitação 2:** O sistema deve redirecionar o usuário para o painel correspondente ao seu perfil (Aluno, Professor ou Empresa) após a autenticação bem-sucedida.
+
+---
+
+
+
+### US08 - Registo de Empresa Parceira
+**Como** Empresa Parceira,  
+**quero** realizar o meu registo no sistema informando os meus dados corporativos,  
+**para** oficializar a parceria e poder oferecer vantagens aos alunos.
+
+* **Critério de Aceitação 1:** O formulário de registo deve solicitar dados de identificação da empresa (como NIPC/CNPJ, Denominação Social, Nome Fantasia e E-mail de contacto corporativo).
+* **Critério de Aceitação 2:** O registo da empresa deve criar automaticamente um perfil com credenciais de acesso (login e palavra-passe) para aceder ao painel exclusivo de parceiros.
+
+---
+
+### US09 - Visualização do Catálogo de Vantagens
+**Como** Aluno,  
+**quero** visualizar um catálogo com todas as vantagens registadas pelas empresas parceiras,  
+**para** escolher qual o benefício que desejo resgatar com as minhas moedas.
+
+* **Critério de Aceitação 1:** O catálogo deve exibir a fotografia, a descrição completa, o nome da empresa parceira e o custo em moedas de cada vantagem listada.
+* **Critério de Aceitação 2:** O sistema deve destacar ou desativar visualmente as vantagens cujo custo seja superior ao saldo atual de moedas do aluno.
+
+---
+
+### US10 - Pesquisa e Seleção de Alunos
+**Como** Professor,  
+**quero** pesquisar alunos no sistema pelo nome ou número de identificação civil (ex: Cartão de Cidadão / CPF),  
+**para** selecionar corretamente o destinatário antes de realizar o envio de moedas.
+
+* **Critério de Aceitação 1:** A pesquisa do professor deve listar apenas alunos que estejam ativamente matriculados na mesma Instituição de Ensino à qual o professor está vinculado.
+* **Critério de Aceitação 2:** A lista de resultados da pesquisa deve exibir o nome completo e o curso do aluno, auxiliando na identificação correta em casos de alunos com nomes semelhantes (homónimos).
+
+---
+
+### US11 - Validação e Baixa de Cupão de Resgate
+**Como** Empresa Parceira,  
+**quero** inserir no sistema o código do cupão apresentado pelo aluno durante a troca presencial,  
+**para** confirmar a validade da troca e impedir que o mesmo código seja reutilizado.
+
+* **Critério de Aceitação 1:** O sistema deve possuir um ecrã onde a empresa parceira possa digitar o código de conferência (recebido por e-mail) e verificar se o mesmo é válido e pertence à sua empresa.
+* **Critério de Aceitação 2:** Ao confirmar o código validado, o estado do cupão na base de dados deve mudar para "Utilizado", gerando um erro caso alguém tente validá-lo novamente no futuro.
+
+---
+
+### US12 - Importação de Professores em Lote *(Backoffice/Admin)*
+**Como** Instituição de Ensino Parceira,  
+**quero** importar uma lista contendo os dados dos meus professores,  
+**para** que estes sejam pré-registados no sistema de forma rápida e massiva.
+
+* **Critério de Aceitação 1:** O sistema deve permitir o carregamento (upload) de um ficheiro estruturado (ex: folha de cálculo ou CSV) contendo os campos obrigatórios definidos (nome, documento de identificação e departamento).
+* **Critério de Aceitação 2:** Ao processar o ficheiro com sucesso, o sistema deve criar os perfis dos professores, associá-los à instituição responsável pelo upload e deixá-los prontos para o primeiro acesso.
