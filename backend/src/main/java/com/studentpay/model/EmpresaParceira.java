@@ -1,5 +1,6 @@
 package com.studentpay.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import java.util.ArrayList;
@@ -19,6 +20,7 @@ public class EmpresaParceira extends Usuario {
 
     private String site;
 
+    @JsonIgnore
     @OneToMany(mappedBy = "empresa", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Vantagem> vantagens = new ArrayList<>();
 

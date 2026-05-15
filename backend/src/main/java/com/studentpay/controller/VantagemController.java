@@ -9,6 +9,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import java.util.Map;
 import java.util.UUID;
 
 @Path("/api/vantagens")
@@ -60,7 +61,8 @@ public class VantagemController {
     @RolesAllowed("aluno")
     public Response resgatar(@PathParam("id") UUID vantagemId) {
         UUID alunoId = UUID.fromString(jwt.getClaim("userId"));
-        return Response.ok(vantagemService.resgatar(alunoId, vantagemId)).build();
+        var resgate = vantagemService.resgatar(alunoId, vantagemId);
+        return Response.ok(Map.of("codigo", resgate.getCodigo(), "message", "Resgate realizado com sucesso")).build();
     }
 
     @GET

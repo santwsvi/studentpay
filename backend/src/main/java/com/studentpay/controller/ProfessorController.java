@@ -9,6 +9,7 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import org.eclipse.microprofile.jwt.JsonWebToken;
+import java.util.Map;
 import java.util.UUID;
 
 @Path("/api/professores")
@@ -29,7 +30,8 @@ public class ProfessorController {
     @RolesAllowed("professor")
     public Response enviarMoedas(@Valid EnvioMoedasRequest req) {
         UUID professorId = UUID.fromString(jwt.getClaim("userId"));
-        return Response.ok(professorService.enviarMoedas(professorId, req)).build();
+        professorService.enviarMoedas(professorId, req);
+        return Response.ok(Map.of("message", "Moedas enviadas com sucesso")).build();
     }
 
     @GET

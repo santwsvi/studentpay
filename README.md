@@ -87,8 +87,14 @@ O sistema já vem com dados pré-cadastrados:
 |---|---|---|---|
 | Professor | joao.aramuni | prof123 | PUC Minas, 1000 moedas |
 | Professor | maria.silva | prof123 | UFMG, 1000 moedas |
+| Aluno | victor.gabriel | aluno123 | Eng. Software, PUC Minas |
+| Aluno | ana.souza | aluno123 | Ciencia da Computacao, PUC Minas |
+| Aluno | pedro.lima | aluno123 | Ciencia da Computacao, UFMG |
+| Empresa | techbh | empresa123 | 2 vantagens cadastradas |
+| Empresa | pageone | empresa123 | 2 vantagens cadastradas |
 
 Instituições: PUC Minas, UFMG, UNA (com cursos vinculados).
+4 vantagens pré-cadastradas (descontos e frete gratis da TechBH, livros da PageOne).
 
 ## Diagramas
 
@@ -98,7 +104,8 @@ Todos os diagramas estão na pasta `diagrams/`:
 - **Histórias de Usuário** — `user_stories.md`
 - **Diagrama de Classes** — `class_diagram.md` + `class_diagram_description.md`
 - **Diagrama de Componentes** — `component_diagram.md`
-- **Modelo Entidade-Relacionamento** — `er_diagram.md`
+- **Modelo ER Conceitual** — `er_conceptual.md`
+- **Modelo ER Relacional** — `er_diagram.md`
 
 ## Estrutura do Repositório
 

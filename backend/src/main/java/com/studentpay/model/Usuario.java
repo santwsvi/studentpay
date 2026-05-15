@@ -4,6 +4,7 @@ import io.quarkus.security.jpa.Password;
 import io.quarkus.security.jpa.Roles;
 import io.quarkus.security.jpa.UserDefinition;
 import io.quarkus.security.jpa.Username;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.util.UUID;
 
@@ -27,6 +28,7 @@ public abstract class Usuario {
     @Column(nullable = false, unique = true)
     private String login;
 
+    @JsonIgnore
     @Password
     @Column(name = "senha_hash", nullable = false)
     private String senhaHash;
@@ -38,6 +40,7 @@ public abstract class Usuario {
     @Column(name = "tipo_usuario", nullable = false)
     private String tipoUsuario;
 
+    @JsonIgnore
     @OneToOne(mappedBy = "usuario", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private CarteiraMoedas carteira;
 
