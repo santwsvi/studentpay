@@ -19,11 +19,11 @@ INSERT INTO cursos (id, nome, instituicao_id) VALUES ('b1b2c3d4-0006-0006-0006-0
 -- Seed: Professores (pré-cadastrados)
 -- ========================
 -- Senha: prof123 (hash bcrypt)
-INSERT INTO usuarios (id, nome, email, login, senha_hash, ativo, tipo_usuario) VALUES ('c1b2c3d4-0001-0001-0001-000000000001', 'João Paulo Aramuni', 'joao.aramuni@pucminas.br', 'joao.aramuni', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true, 'professor');
+INSERT INTO usuarios (id, nome, email, login, senha_hash, ativo, tipo_usuario) VALUES ('c1b2c3d4-0001-0001-0001-000000000001', 'João Paulo Aramuni', 'joao.aramuni@pucminas.br', 'joao.aramuni', '$2a$10$IPdKApJiT5dY5q7lzRPBwe.WmB1nxeupTJf2kufwAY/Khe/zzlwYy', true, 'professor');
 INSERT INTO professores (id, cpf, departamento, instituicao_id) VALUES ('c1b2c3d4-0001-0001-0001-000000000001', '111.222.333-44', 'Engenharia de Software', 'a1b2c3d4-0001-0001-0001-000000000001');
 INSERT INTO carteiras_moedas (id, usuario_id, saldo_atual) VALUES ('d1b2c3d4-0001-0001-0001-000000000001', 'c1b2c3d4-0001-0001-0001-000000000001', 1000);
 
-INSERT INTO usuarios (id, nome, email, login, senha_hash, ativo, tipo_usuario) VALUES ('c1b2c3d4-0002-0002-0002-000000000002', 'Maria Silva', 'maria.silva@ufmg.br', 'maria.silva', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', true, 'professor');
+INSERT INTO usuarios (id, nome, email, login, senha_hash, ativo, tipo_usuario) VALUES ('c1b2c3d4-0002-0002-0002-000000000002', 'Maria Silva', 'maria.silva@ufmg.br', 'maria.silva', '$2a$10$IPdKApJiT5dY5q7lzRPBwe.WmB1nxeupTJf2kufwAY/Khe/zzlwYy', true, 'professor');
 INSERT INTO professores (id, cpf, departamento, instituicao_id) VALUES ('c1b2c3d4-0002-0002-0002-000000000002', '555.666.777-88', 'Ciência da Computação', 'a1b2c3d4-0002-0002-0002-000000000002');
 INSERT INTO carteiras_moedas (id, usuario_id, saldo_atual) VALUES ('d1b2c3d4-0002-0002-0002-000000000002', 'c1b2c3d4-0002-0002-0002-000000000002', 1000);
 
