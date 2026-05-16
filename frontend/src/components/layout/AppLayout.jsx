@@ -16,8 +16,8 @@ export default function AppLayout() {
 
   return (
     <div className="min-h-screen flex bg-gray-50">
-      {/* Sidebar — Desktop */}
-      <aside className="hidden md:flex w-64 flex-col bg-navy text-white fixed inset-y-0 left-0 z-40">
+      {/* Sidebar — Desktop (static in flow, not fixed) */}
+      <aside className="hidden md:flex w-64 shrink-0 flex-col bg-navy text-white min-h-screen sticky top-0 h-screen">
         <div className="flex items-center gap-3 px-6 h-16 border-b border-white/10">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center">
             <GraduationCap className="w-4 h-4 text-white" />
@@ -107,8 +107,8 @@ export default function AppLayout() {
       )}
 
       {/* Main content */}
-      <main className="flex-1 md:ml-64 min-h-screen pt-14 md:pt-0">
-        <div className="max-w-6xl mx-auto px-4 sm:px-8 py-8">
+      <main className="flex-1 min-w-0 pt-14 md:pt-0">
+        <div className="px-6 sm:px-10 py-8 max-w-6xl">
           <Outlet />
         </div>
       </main>
