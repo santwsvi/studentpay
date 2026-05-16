@@ -14,9 +14,7 @@ export default function DashboardProfessor() {
   const [loadingData, setLoadingData] = useState(true)
   const [enviando, setEnviando] = useState(false)
 
-  useEffect(() => {
-    carregarDados()
-  }, [])
+  useEffect(() => { carregarDados() }, [])
 
   const carregarDados = async () => {
     setLoadingData(true)
@@ -65,14 +63,15 @@ export default function DashboardProfessor() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Painel do Professor" />
+      <PageHeader title="Painel do Professor" subtitle="Distribua moedas e reconheça seus alunos" />
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-lg">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           label="Saldo disponível"
           value={extrato?.saldoAtual ?? 0}
           icon={Coins}
+          variant="gradient"
         />
         <StatCard
           label="Moedas enviadas"
@@ -82,20 +81,22 @@ export default function DashboardProfessor() {
       </div>
 
       {/* Enviar Moedas */}
-      <section className="bg-white border border-gray-300 rounded-xl shadow-md p-6">
-        <h2 className="text-base font-bold text-gray-900 mb-5">Enviar Moedas</h2>
-        <EnviarMoedasForm
-          alunos={alunos}
-          saldo={extrato?.saldoAtual}
-          onSubmit={handleEnviar}
-          loading={enviando}
-        />
+      <section>
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Enviar Moedas</h2>
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
+          <EnviarMoedasForm
+            alunos={alunos}
+            saldo={extrato?.saldoAtual}
+            onSubmit={handleEnviar}
+            loading={enviando}
+          />
+        </div>
       </section>
 
       {/* Extrato */}
       <section>
-        <h2 className="text-base font-bold text-gray-900 mb-4">Histórico de Envios</h2>
-        <div className="bg-white border border-gray-300 rounded-xl shadow-md p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Histórico de Envios</h2>
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
           <ExtratoTable transacoes={extrato?.transacoes || []} tipo="professor" />
         </div>
       </section>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Coins } from 'lucide-react'
+import { Coins, TrendingUp } from 'lucide-react'
 import api from '../services/api'
 import PageHeader from '../components/layout/PageHeader'
 import StatCard from '../components/ui/StatCard'
@@ -18,9 +18,7 @@ export default function DashboardAluno() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [vantagemSelecionada, setVantagemSelecionada] = useState(null)
 
-  useEffect(() => {
-    carregarDados()
-  }, [])
+  useEffect(() => { carregarDados() }, [])
 
   const carregarDados = async () => {
     setLoadingData(true)
@@ -62,25 +60,33 @@ export default function DashboardAluno() {
   if (loadingData) {
     return (
       <div className="space-y-6">
-        <Skeleton variant="stat" className="w-48" />
+        <Skeleton variant="stat" className="max-w-xs" />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <Skeleton variant="card" count={3} />
         </div>
-        <Skeleton variant="table" count={5} className="mt-4" />
+        <Skeleton variant="table" count={5} />
       </div>
     )
   }
 
+  const totalResgates = extrato?.transacoes?.filter(t => t.tipo === 'RESGATE').length ?? 0
+
   return (
     <div className="space-y-8">
-      <PageHeader title="Painel do Aluno" />
+      <PageHeader title="Painel do Aluno" subtitle="Acompanhe seu saldo e resgate vantagens" />
 
-      {/* Saldo */}
-      <div className="max-w-xs">
+      {/* Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
-          label="Saldo"
+          label="Saldo atual"
           value={extrato?.saldoAtual ?? 0}
           icon={Coins}
+          variant="gradient"
+        />
+        <StatCard
+          label="Resgates realizados"
+          value={totalResgates}
+          icon={TrendingUp}
         />
       </div>
 
@@ -109,23 +115,18 @@ export default function DashboardAluno() {
 
       {/* Extrato */}
       <section>
-        <h2 className="text-base font-bold text-gray-900 mb-4">Extrato</h2>
-        <div className="bg-white border border-gray-300 rounded-xl shadow-md p-6">
+        <h2 className="text-lg font-bold text-gray-900 mb-4">Extrato</h2>
+        <div className="bg-white border border-gray-200 rounded-xl p-6">
           <ExtratoTable transacoes={extrato?.transacoes || []} tipo="aluno" />
         </div>
       </section>
 
-      {/* Confirm Dialog */}
       <ConfirmDialog
         open={confirmOpen}
         onClose={() => { setConfirmOpen(false); setVantagemSelecionada(null) }}
         onConfirm={confirmarResgate}
         title="Resgatar vantagem"
-        description={
-          vantagemSelecionada
-            ? `Deseja resgatar "${vantagemSelecionada.descricao}" por ${vantagemSelecionada.custoMoedas} moedas?`
-            : ''
-        }
+        description={vantagemSelecionada ? `Deseja resgatar "${vantagemSelecionada.descricao}" por ${vantagemSelecionada.custoMoedas} moedas?` : ''}
         confirmLabel="Resgatar"
         variant="primary"
         loading={!!resgatando}

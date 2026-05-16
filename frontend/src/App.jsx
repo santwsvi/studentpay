@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'sonner'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import AppLayout from './components/layout/AppLayout'
 import Login from './pages/Login'
@@ -28,10 +29,13 @@ function AppRoutes() {
 
   return (
     <Routes>
+      {/* Fullscreen pages — no Navbar */}
+      <Route path="/login" element={<Login />} />
+      <Route path="/cadastro/aluno" element={<CadastroAluno />} />
+      <Route path="/cadastro/empresa" element={<CadastroEmpresa />} />
+
+      {/* App pages — with Navbar */}
       <Route element={<AppLayout />}>
-        <Route path="/login" element={<Login />} />
-        <Route path="/cadastro/aluno" element={<CadastroAluno />} />
-        <Route path="/cadastro/empresa" element={<CadastroEmpresa />} />
         <Route path="/dashboard" element={<PrivateRoute>{getDashboard()}</PrivateRoute>} />
         <Route path="/" element={<Navigate to="/login" />} />
       </Route>
@@ -44,6 +48,7 @@ function App() {
     <AuthProvider>
       <BrowserRouter>
         <AppRoutes />
+        <Toaster position="top-right" richColors closeButton />
       </BrowserRouter>
     </AuthProvider>
   )

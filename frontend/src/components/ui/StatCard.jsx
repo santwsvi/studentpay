@@ -6,6 +6,7 @@ export default function StatCard({
   icon: Icon,
   trend,
   className = '',
+  variant = 'default',
 }) {
   const [displayValue, setDisplayValue] = useState(0)
   const ref = useRef(null)
@@ -31,22 +32,32 @@ export default function StatCard({
     requestAnimationFrame(animate)
   }, [value])
 
+  const isGradient = variant === 'gradient'
+
   return (
-    <div className={`bg-white rounded-lg border border-gray-300 p-5 shadow-sm ${className}`}>
-      <div className="flex items-start justify-between mb-2">
-        <span className="text-sm font-medium text-gray-500">{label}</span>
+    <div className={`rounded-xl p-5 ${
+      isGradient
+        ? 'bg-gradient-to-br from-primary to-secondary text-white shadow-lg'
+        : 'bg-white border border-gray-300 shadow-sm'
+    } ${className}`}>
+      <div className="flex items-start justify-between mb-3">
+        <span className={`text-sm font-medium ${isGradient ? 'text-white/80' : 'text-gray-500'}`}>{label}</span>
         {Icon && (
-          <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Icon className="w-5 h-5 text-primary" />
+          <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${
+            isGradient ? 'bg-white/20' : 'bg-primary/10'
+          }`}>
+            <Icon className={`w-5 h-5 ${isGradient ? 'text-white' : 'text-primary'}`} />
           </div>
         )}
       </div>
-      <p ref={ref} className="text-3xl font-extrabold text-gray-900">
+      <p ref={ref} className={`text-3xl font-extrabold ${isGradient ? 'text-white' : 'text-gray-900'}`}>
         {displayValue}
       </p>
       {trend && (
         <span className={`inline-flex items-center text-xs font-medium mt-1 ${
-          trend.startsWith('+') ? 'text-success' : 'text-error'
+          isGradient
+            ? 'text-white/70'
+            : trend.startsWith('+') ? 'text-success' : 'text-error'
         }`}>
           {trend}
         </span>
