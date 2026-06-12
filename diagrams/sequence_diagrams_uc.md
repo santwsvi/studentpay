@@ -209,7 +209,7 @@ sequenceDiagram
         E->>U: Entrega e-mail com instruções
         S-->>U: Exibe aviso: "Se o cadastro existir, um e-mail foi enviado"
     else Usuário Não Encontrado
-        S-->>U: Exibe aviso: "Se o cadastro existir, um e-mail foi enviado" (Por segurança, não revela se existe)
+        S-->>U: Exibe aviso: "Se o cadastro existir, um e-mail foi enviado" 
     end
     
     U->>S: Acessa o link de recuperação
