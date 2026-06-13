@@ -1,0 +1,66 @@
+name: studentpay
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: studentpay-db
+    environment:
+      POSTGRES_USER: studentpay
+      POSTGRES_PASSWORD: studentpay
+      POSTGRES_DB: studentpay
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U studentpay -d studentpay"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  # Servidor SMTP de testes — visualize os e-mails em http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: studentpay-mailpit
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    environment:
+      MP_MAX_MESSAGES: "500"
+      MP_SMTP_AUTH_ALLOW_INSECURE: "true"
+
+  backend:
+    build:
+      context: ./backend
+    container_name: studentpay-backend
+    depends_on:
+      db:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+    environment:
+      QUARKUS_DATASOURCE_JDBC_URL: jdbc:postgresql://db:5432/studentpay
+      QUARKUS_DATASOURCE_USERNAME: studentpay
+      QUARKUS_DATASOURCE_PASSWORD: studentpay
+      # E-mails reais entregues ao Mailpit (em vez do modo mock)
+      QUARKUS_MAILER_MOCK: "false"
+      QUARKUS_MAILER_HOST: mailpit
+      QUARKUS_MAILER_PORT: "1025"
+      QUARKUS_MAILER_START_TLS: "DISABLED"
+      QUARKUS_MAILER_FROM: "StudentPay <no-reply@studentpay.dev>"
+      # Origem do frontend (nginx) liberada no CORS
+      QUARKUS_HTTP_CORS_ORIGINS: "http://localhost:5173"
+    ports:
+      - "8080:8080"
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: studentpay-frontend
+    depends_on:
+      - backend
+    ports:
+      - "5173:80"
+
+volumes:
+  pgdata:

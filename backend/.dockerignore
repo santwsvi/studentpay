@@ -1,5 +1,9 @@
-*
-!target/*-runner
-!target/*-runner.jar
-!target/lib/*
-!target/quarkus-app/*
+# Contexto do build multi-stágio (Dockerfile) — precisa de pom.xml + src/,
+# o target/ é gerado dentro do container.
+target/
+.git/
+.gitignore
+.idea/
+*.iml
+*.log
+src/main/docker/
