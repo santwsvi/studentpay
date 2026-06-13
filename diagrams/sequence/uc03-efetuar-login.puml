@@ -1,0 +1,48 @@
+@startuml uc03-efetuar-login
+!include _style.puml
+title UC03 · Efetuar Login (autenticação JWT)
+footer StudentPay · Release 2 · Lab04S02 — Diagrama de Sequência
+autonumber "<b>00"
+
+actor "Usuário\n(Aluno · Professor · Empresa)" as U
+participant "React SPA\n(Login · AuthContext)" as SPA COR_SPA
+
+box "Quarkus · Backend (MVC)"
+    participant "AuthController\n«control»" as CTRL COR_CONTROLLER
+    participant "AuthService\n«service»" as SVC COR_SERVICE
+    participant "UsuarioRepository\n«repository»" as REPO COR_REPO
+end box
+
+database "PostgreSQL" as DB COR_DB
+
+U -> SPA : Informa login e senha
+SPA -> CTRL : POST /api/auth/login\n(LoginRequest)
+activate CTRL
+CTRL -> SVC : autenticar(req)
+activate SVC
+SVC -> REPO : findByLogin(login)
+REPO -> DB : SELECT usuarios WHERE login = ?
+DB --> REPO
+REPO --> SVC
+
+alt Usuário inexistente OU senha inválida OU inativo
+    SVC --> CTRL : NotAuthorizedException
+    CTRL --> SPA : 401 { error }
+    SPA --> U : "Credenciais inválidas"
+else Credenciais válidas
+    SVC -> SVC : BcryptUtil.matches(senha, hash)
+    note right of SVC
+        Emite JWT assinado (RS256):
+        upn, groups=[tipoUsuario],
+        claims userId · nome · exp 8h
+    end note
+    SVC -> SVC : Jwt.issuer("studentpay")...sign()
+    SVC --> CTRL : LoginResponse(token, tipo, nome)
+    deactivate SVC
+    CTRL --> SPA : 200 OK { token, tipoUsuario, nome }
+    deactivate CTRL
+    SPA -> SPA : Persiste token (localStorage) + Authorization header
+    SPA --> U : Redireciona para o painel do seu perfil
+end
+
+@enduml

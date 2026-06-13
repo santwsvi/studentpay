@@ -1,0 +1,62 @@
+@startuml uc08-resgatar-vantagem
+!include _style.puml
+title UC08 · Trocar Moedas por Vantagem (Resgate)
+footer StudentPay · Release 2 · Lab04S03 — Diagrama de Sequência
+autonumber "<b>00"
+
+actor "Aluno" as A
+participant "React SPA\n(DashboardAluno · ConfirmDialog)" as SPA COR_SPA
+
+box "Quarkus · Backend (MVC)"
+    participant "VantagemController\n«control»" as CTRL COR_CONTROLLER
+    participant "VantagemService\n«service»" as SVC COR_SERVICE
+    participant "Carteira/Transacao\nRepository «repository»" as REPO COR_REPO
+    participant "NotificacaoEmailService\n«service»" as EMAIL COR_EMAIL_SVC
+end box
+
+database "PostgreSQL" as DB COR_DB
+participant "Qute Templates\n+ Mailer «infra»" as MAIL COR_SMTP
+actor "Servidor SMTP\n(Mailpit)" as SMTP
+
+note over A, CTRL : Pré-condição «include» UC03 — requisição autenticada (Bearer JWT)
+
+A -> SPA : Clica "Resgatar" em uma vantagem
+SPA -> SPA : ConfirmDialog → confirma
+SPA -> CTRL : POST /api/vantagens/{id}/resgatar\nAuthorization: Bearer <jwt>
+activate CTRL
+CTRL -> CTRL : @RolesAllowed("aluno")\nalunoId = jwt.getClaim("userId")
+CTRL -> SVC : resgatar(alunoId, vantagemId)
+activate SVC
+note right of SVC : @Transactional
+SVC -> REPO : findAluno / findVantagem / findCarteira
+REPO -> DB : SELECT aluno · vantagem · carteira
+DB --> REPO
+REPO --> SVC
+
+alt Vantagem inativa ou saldo insuficiente
+    SVC --> CTRL : IllegalStateException
+    CTRL --> SPA : 422 { error }
+    SPA --> A : Exibe mensagem de erro
+else Resgate válido
+    SVC -> SVC : carteira.debitar(custoMoedas)
+    SVC -> SVC : codigo = UUID(8) · expiraEm = +30d\nstatus = GERADO
+    SVC -> REPO : persist(ResgateVantagem)
+    REPO -> DB : INSERT transacoes_moeda (RESGATE)
+    DB --> REPO
+    REPO --> SVC
+
+    group «include» UC09 · Enviar Notificação por E-mail
+        SVC -> EMAIL : notificarResgate(aluno, empresa, vantagem, codigo, saldo, expiraEm)
+        EMAIL ->> MAIL : Mail.withHtml(aluno)  ·  template **resgateAluno** (cupom)
+        EMAIL ->> MAIL : Mail.withHtml(empresa)  ·  template **resgateEmpresa** (conferência)
+        MAIL ->> SMTP : Entrega dos dois e-mails com o mesmo código
+    end
+
+    SVC --> CTRL : ResgateVantagem
+    deactivate SVC
+    CTRL --> SPA : 200 OK { codigo }
+    deactivate CTRL
+    SPA --> A : Toast "Cupom: {codigo}" + atualiza saldo e extrato
+end
+
+@enduml

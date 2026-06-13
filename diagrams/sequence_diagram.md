@@ -1,37 +1,20 @@
-### Diagrama de Sequência Geral - Fluxo Principal
+# Diagrama de Sequência Geral — StudentPay (Release 2 · Lab04S03)
 
+Visão fim-a-fim do fluxo principal do sistema, integrando os casos de uso em
+quatro fases: **autenticação → envio de moedas → consulta/catálogo → resgate**.
+Modelado em **PlantUML** ([fonte](./sequence/geral.puml)).
 
+![Diagrama de Sequência Geral](./sequence/out/geral.png)
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor P as Professor
-    actor A as Aluno
-    participant S as Sistema StudentPay
-    actor Mail as Sistema de E-mail
-    actor E as Empresa Parceira
-    
-    %% Fase 1: Envio de Moedas pelo Professor
-    P->>S: Efetuar Login (UC03)
-    S-->>P: Sessão iniciada
-    
-    P->>S: Enviar Moedas para o Aluno (UC05)
-    S->>S: Verifica saldo e registra transação
-    S->>Mail: Solicita notificação de recebimento (UC08)
-    Mail->>A: Entrega e-mail: "Você recebeu moedas!"
-    S-->>P: Confirmação de envio
-    
-    %% Fase 2: Resgate de Vantagem pelo Aluno
-    A->>S: Efetuar Login (UC03)
-    S-->>A: Sessão iniciada
-    
-    A->>S: Consultar Extrato (UC04)
-    S-->>A: Retorna saldo atualizado
-    
-    A->>S: Trocar Moedas por Vantagem (UC06)
-    S->>S: Deduz saldo, gera cupom e registra transação
-    S->>Mail: Solicita envio do cupom (UC08)
-    Mail->>A: Entrega e-mail com código do cupom
-    Mail->>E: Entrega e-mail com código para conferência
-    S-->>A: Confirmação de resgate e exibição do código na tela
-```
+## Fases
+
+1. **Autenticação (UC03)** — login e emissão do JWT.
+2. **Envio de moedas (UC05 + UC09)** — professor reconhece o aluno; o sistema
+   debita/credita as carteiras e envia **dois e-mails** (recebimento ao aluno,
+   comprovante ao professor).
+3. **Consulta e catálogo (UC04 + UC06)** — aluno vê saldo, extrato e vantagens.
+4. **Resgate de vantagem (UC08 + UC09)** — aluno troca moedas por uma vantagem;
+   o sistema gera o cupom e notifica aluno e empresa com o mesmo código.
+
+> Os diagramas **por caso de uso** estão em
+> [`sequence_diagrams_uc.md`](./sequence_diagrams_uc.md).

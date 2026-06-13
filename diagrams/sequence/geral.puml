@@ -1,0 +1,55 @@
+@startuml geral
+!include _style.puml
+title Diagrama de Sequência Geral · Fluxo principal do StudentPay
+footer StudentPay · Release 2 · Lab04S03 — Diagrama de Sequência Geral
+autonumber "<b>00"
+
+actor "Professor" as P
+actor "Aluno" as A
+participant "React SPA" as SPA COR_SPA
+participant "StudentPay API\n(MVC · Controller→Service→Repository)" as API COR_SERVICE
+database "PostgreSQL" as DB COR_DB
+participant "Qute + Mailer\n«infra»" as MAIL COR_SMTP
+actor "Empresa Parceira" as E
+
+== 1. Autenticação (UC03) ==
+P -> SPA : login
+SPA -> API : POST /api/auth/login
+API -> DB : valida credenciais (BCrypt)
+DB --> API
+API --> SPA : JWT (8h)
+SPA --> P : Painel do Professor
+
+== 2. Envio de moedas (UC05 + UC09) ==
+P -> SPA : Seleciona aluno, quantidade e motivo
+SPA -> API : POST /api/professores/enviar-moedas (Bearer)
+API -> DB : debita professor · credita aluno · 2× transação
+DB --> API
+API ->> MAIL : e-mail recebimento → Aluno (envioMoedasAluno)
+API ->> MAIL : e-mail comprovante → Professor (envioMoedasProfessor)
+MAIL ->> A : "Você recebeu moedas!"
+MAIL ->> P : "Comprovante de envio"
+API --> SPA : 200 OK
+SPA --> P : Saldo e extrato atualizados
+
+== 3. Consulta e catálogo (UC04 + UC06) ==
+A -> SPA : login → Painel do Aluno
+SPA -> API : GET /api/vantagens/extrato  ·  GET /api/vantagens
+API -> DB : saldo + transações + vantagens ativas
+DB --> API
+API --> SPA : extrato + catálogo
+SPA --> A : Saldo, extrato e vantagens
+
+== 4. Resgate de vantagem (UC08 + UC09) ==
+A -> SPA : Resgatar vantagem (confirma)
+SPA -> API : POST /api/vantagens/{id}/resgatar (Bearer)
+API -> DB : debita saldo · gera cupom · transação RESGATE
+DB --> API
+API ->> MAIL : cupom → Aluno (resgateAluno)
+API ->> MAIL : conferência → Empresa (resgateEmpresa)
+MAIL ->> A : "Seu cupom: CUP-XXXX"
+MAIL ->> E : "Novo resgate para conferência"
+API --> SPA : 200 OK { codigo }
+SPA --> A : Toast com o código do cupom
+
+@enduml

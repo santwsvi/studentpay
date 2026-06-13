@@ -1,0 +1,63 @@
+@startuml uc05-enviar-moedas
+!include _style.puml
+title UC05 · Enviar Moedas (Professor → Aluno)
+footer StudentPay · Release 2 · Lab04S01 — Diagrama de Sequência
+autonumber "<b>00"
+
+actor "Professor" as P
+participant "React SPA\n(EnviarMoedasForm)" as SPA COR_SPA
+
+box "Quarkus · Backend (MVC)"
+    participant "ProfessorController\n«control»" as CTRL COR_CONTROLLER
+    participant "ProfessorService\n«service»" as SVC COR_SERVICE
+    participant "Carteira/Transacao\nRepository «repository»" as REPO COR_REPO
+    participant "NotificacaoEmailService\n«service»" as EMAIL COR_EMAIL_SVC
+end box
+
+database "PostgreSQL" as DB COR_DB
+participant "Qute Templates\n+ Mailer «infra»" as MAIL COR_SMTP
+actor "Servidor SMTP\n(Mailpit)" as SMTP
+
+note over P, CTRL : Pré-condição «include» UC03 — requisição autenticada (Bearer JWT)
+
+P -> SPA : Seleciona aluno, informa quantidade e motivo
+SPA -> SPA : Validação (saldo disponível · motivo obrigatório)
+SPA -> CTRL : POST /api/professores/enviar-moedas\nAuthorization: Bearer <jwt> · (EnvioMoedasRequest)
+activate CTRL
+CTRL -> CTRL : @RolesAllowed("professor")\nprofessorId = jwt.getClaim("userId")
+CTRL -> SVC : enviarMoedas(professorId, req)
+activate SVC
+note right of SVC : @Transactional
+SVC -> REPO : findProfessor / findAluno / findCarteiras
+REPO -> DB : SELECT professor · aluno · carteiras
+DB --> REPO
+REPO --> SVC
+
+alt Saldo insuficiente
+    SVC -> SVC : carteiraProfessor.debitar(qtd)\nlança IllegalStateException
+    SVC --> CTRL : IllegalStateException
+    CTRL --> SPA : 422 { error: "Saldo insuficiente" }
+    SPA --> P : Exibe "Saldo insuficiente"
+else Saldo suficiente
+    SVC -> SVC : carteiraProfessor.debitar(qtd)\ncarteiraAluno.creditar(qtd)
+    SVC -> REPO : persist(EnvioMoedas) ×2\n(débito do professor + crédito do aluno)
+    REPO -> DB : INSERT transacoes_moeda
+    DB --> REPO
+    REPO --> SVC
+
+    group «include» UC09 · Enviar Notificação por E-mail
+        SVC -> EMAIL : notificarRecebimentoAluno(aluno, professor, qtd, motivo, saldoAluno)
+        EMAIL ->> MAIL : Mail.withHtml(aluno)  ·  template **envioMoedasAluno**
+        SVC -> EMAIL : notificarEnvioProfessor(professor, aluno, qtd, motivo, saldoProfessor)
+        EMAIL ->> MAIL : Mail.withHtml(professor)  ·  template **envioMoedasProfessor**
+        MAIL ->> SMTP : Entrega assíncrona dos dois e-mails
+    end
+
+    SVC --> CTRL : EnvioMoedas
+    deactivate SVC
+    CTRL --> SPA : 200 OK { message }
+    deactivate CTRL
+    SPA --> P : Toast de sucesso + recarrega saldo e extrato
+end
+
+@enduml

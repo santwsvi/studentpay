@@ -1,0 +1,51 @@
+@startuml uc02-cadastrar-empresa
+!include _style.puml
+title UC02 · Cadastrar Empresa Parceira
+footer StudentPay · Release 2 · Lab04S02 — Diagrama de Sequência
+autonumber "<b>00"
+
+actor "Empresa Parceira" as E
+participant "React SPA\n(CadastroEmpresa)" as SPA COR_SPA
+
+box "Quarkus · Backend (MVC)"
+    participant "EmpresaParceiraController\n«control»" as CTRL COR_CONTROLLER
+    participant "EmpresaParceiraService\n«service»" as SVC COR_SERVICE
+    participant "EmpresaParceiraRepository\n«repository»" as REPO COR_REPO
+end box
+
+database "PostgreSQL" as DB COR_DB
+
+E -> SPA : Abre formulário de cadastro
+SPA --> E : Exibe formulário
+
+E -> SPA : Preenche razão social, nome fantasia,\nCNPJ, site, login e senha
+SPA -> SPA : Validação client-side
+SPA -> CTRL : POST /api/empresas\n(CadastroEmpresaRequest)
+activate CTRL
+CTRL -> CTRL : @Valid · Bean Validation
+CTRL -> SVC : cadastrar(req)
+activate SVC
+SVC -> REPO : findByCnpj / findByLogin
+REPO -> DB : SELECT empresas_parceiras
+DB --> REPO
+REPO --> SVC
+
+alt CNPJ ou login já cadastrado
+    SVC --> CTRL : BadRequestException
+    CTRL --> SPA : 400 { error }
+    SPA --> E : Exibe mensagem de erro
+else Dados válidos
+    SVC -> SVC : BcryptUtil.bcryptHash(senha)
+    SVC -> SVC : new EmpresaParceira + CarteiraMoedas
+    SVC -> REPO : persist(empresa)
+    REPO -> DB : INSERT usuario · empresa · carteira
+    DB --> REPO
+    REPO --> SVC
+    SVC --> CTRL : EmpresaParceira
+    deactivate SVC
+    CTRL --> SPA : 201 Created
+    deactivate CTRL
+    SPA --> E : Sucesso → redireciona para Login
+end
+
+@enduml

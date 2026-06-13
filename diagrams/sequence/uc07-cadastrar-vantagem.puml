@@ -1,0 +1,52 @@
+@startuml uc07-cadastrar-vantagem
+!include _style.puml
+title UC07 · Cadastrar Vantagem (Empresa Parceira)
+footer StudentPay · Release 2 · Lab04S02 — Diagrama de Sequência
+autonumber "<b>00"
+
+actor "Empresa Parceira" as E
+participant "React SPA\n(DashboardEmpresa)" as SPA COR_SPA
+
+box "Quarkus · Backend (MVC)"
+    participant "VantagemController\n«control»" as CTRL COR_CONTROLLER
+    participant "VantagemService\n«service»" as SVC COR_SERVICE
+    participant "Empresa/Vantagem\nRepository «repository»" as REPO COR_REPO
+end box
+
+database "PostgreSQL" as DB COR_DB
+
+note over E, CTRL : Pré-condição «include» UC03 — requisição autenticada (Bearer JWT)
+
+E -> SPA : Aciona "Nova vantagem"
+SPA --> E : Exibe formulário (descrição · foto · custo)
+E -> SPA : Informa descrição, fotoUrl e custo em moedas
+SPA -> SPA : Validação client-side
+SPA -> CTRL : POST /api/vantagens\nAuthorization: Bearer <jwt> · (CadastroVantagemRequest)
+activate CTRL
+CTRL -> CTRL : @RolesAllowed("empresa")\n@Valid · empresaId = jwt.getClaim("userId")
+CTRL -> SVC : cadastrar(empresaId, req)
+activate SVC
+SVC -> REPO : findEmpresaById(empresaId)
+REPO -> DB : SELECT empresa
+DB --> REPO
+REPO --> SVC
+
+alt Empresa não encontrada
+    SVC --> CTRL : NotFoundException
+    CTRL --> SPA : 404 { error }
+    SPA --> E : Exibe mensagem de erro
+else Empresa válida
+    SVC -> SVC : new Vantagem(descricao, fotoUrl, custoMoedas, ativa=true)
+    SVC -> REPO : persist(vantagem)
+    REPO -> DB : INSERT vantagens
+    DB --> REPO
+    REPO --> SVC
+    SVC --> CTRL : Vantagem
+    deactivate SVC
+    CTRL --> SPA : 201 Created { vantagem }
+    deactivate CTRL
+    SPA -> SPA : Atualiza a tabela de vantagens (DataTable)
+    SPA --> E : Toast "Vantagem cadastrada"
+end
+
+@enduml

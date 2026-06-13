@@ -1,0 +1,48 @@
+@startuml uc09-enviar-notificacao
+!include _style.puml
+title UC09 · Enviar Notificação por E-mail «include»
+footer StudentPay · Release 2 · Lab04S01 — Diagrama de Sequência
+autonumber "<b>00"
+
+box "Quarkus · Backend (MVC)"
+    participant "Service de origem\n(Professor/Vantagem) «service»" as SRC COR_SERVICE
+    participant "NotificacaoEmailService\n«service»" as EMAIL COR_EMAIL_SVC
+    participant "Qute @CheckedTemplate\n«infra»" as QUTE COR_REPO
+    participant "Mailer (cliente SMTP)\n«infra»" as MAILER COR_SMTP
+end box
+
+actor "Servidor SMTP\n(Mailpit / SMTP real)" as SMTP
+actor "Destinatário\n(Aluno · Professor · Empresa)" as DEST
+
+note over SRC, EMAIL : Sub-fluxo reutilizável — invocado por UC05 (envio) e UC08 (resgate)
+
+SRC -> EMAIL : notificar...(entidades do domínio + saldos)
+activate EMAIL
+
+EMAIL -> QUTE : Templates.<template>(parâmetros).render()
+activate QUTE
+note right of QUTE
+    Template type-safe escolhido por caso de uso:
+    • envioMoedasAluno · envioMoedasProfessor
+    • resgateAluno · resgateEmpresa
+    HTML email-safe com escaping automático
+    dos campos abertos (ex.: "motivo").
+end note
+QUTE --> EMAIL : String HTML renderizada
+deactivate QUTE
+
+EMAIL -> MAILER : Mail.withHtml(destino, assunto, html)
+activate MAILER
+alt quarkus.mailer.mock = true  (dev/CI)
+    MAILER -> MAILER : Captura no MockMailbox + log
+else SMTP configurado
+    MAILER ->> SMTP : Envia mensagem (TCP)
+    SMTP ->> DEST : Entrega na caixa de entrada
+end
+MAILER --> EMAIL : envio agendado
+deactivate MAILER
+
+EMAIL --> SRC : void — retorna ao fluxo de origem
+deactivate EMAIL
+
+@enduml

@@ -1,221 +1,120 @@
-### UC01 - Cadastrar Aluno
+# Diagramas de Sequência — StudentPay (Release 2 · Lab04S02)
 
+Um diagrama de sequência **por caso de uso**, modelados em **PlantUML** e
+**alinhados ao código real** (critério de avaliação da Release 2: *alinhamento
+entre modelo e código*). Em vez de tratar o backend como uma caixa-preta
+("Sistema"), cada diagrama percorre as **camadas MVC** efetivamente
+implementadas no Quarkus:
 
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor A as Aluno
-    participant S as Sistema StudentPay
-    
-    A->>S: Solicita formulário de cadastro
-    S->>S: Carrega Instituições pré-cadastradas
-    S-->>A: Retorna formulário
-    A->>S: Preenche dados (Nome, Email, CPF, RG, Endereço, Instituição, Curso)
-    S->>S: Valida dados e verifica duplicidade
-    
-    alt Dados válidos
-        S->>S: Registra Aluno e cria credenciais
-        S-->>A: Mensagem de sucesso
-    else Dados inválidos ou Aluno já existe
-        S-->>A: Exibe mensagem de erro
-    end
+```
+React SPA  →  Controller (JAX-RS)  →  Service (@Transactional)  →  Repository (Panache)  →  PostgreSQL
+                                              └→ NotificacaoEmailService → Qute (@CheckedTemplate) → Mailer → SMTP
 ```
 
---------------------------------------------------------------------------------------------------------------
-### UC02 - Cadastrar Empresa
+> **Fontes** (`.puml`) e imagens renderizadas (`out/`) ficam em
+> [`sequence/`](./sequence/). Para regenerar, veja [como renderizar](#-como-regenerar).
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor E as Empresa Parceira
-    participant S as Sistema StudentPay
-    
-    E->>S: Solicita formulário de cadastro
-    S-->>E: Retorna formulário
-    E->>S: Preenche dados empresariais e credenciais
-    S->>S: Valida dados cadastrais
-    
-    alt Dados válidos
-        S->>S: Registra Empresa Parceira
-        S-->>E: Mensagem de sucesso
-    else Dados inválidos
-        S-->>E: Exibe mensagem de erro
-    end
+## 🎨 Legenda
 
-    
+| Camada | Cor | Exemplos no código |
+|--------|-----|--------------------|
+| View (SPA React) | 🟦 azul | `pages/`, `components/` |
+| Controller `«control»` | 🟩 verde | `AuthController`, `ProfessorController`, `VantagemController` |
+| Service `«service»` | 🟨 amarelo | `AuthService`, `ProfessorService`, `VantagemService` |
+| Notificação `«service»` | 🟧 laranja | `NotificacaoEmailService` |
+| Repository `«repository»` | 🟦 ciano | `*Repository` (Panache) |
+| Banco / Infra | 🟪 roxo / 🌸 rosa | `PostgreSQL`, `Qute + Mailer`, `SMTP` |
+
+Convenção de setas: `→` chamada síncrona · `-->` retorno · `->>` mensagem
+assíncrona (entrega de e-mail). Blocos `alt/else` representam caminhos
+alternativos (erros, validações) e `group «include»` representa inclusão de
+outro caso de uso.
+
+---
+
+## 📑 Casos de uso
+
+| # | Caso de uso | Sprint | Fonte |
+|---|-------------|--------|-------|
+| UC01 | Cadastrar Aluno | R1 | [`uc01`](./sequence/uc01-cadastrar-aluno.puml) |
+| UC02 | Cadastrar Empresa Parceira | R1 | [`uc02`](./sequence/uc02-cadastrar-empresa.puml) |
+| UC03 | Efetuar Login (JWT) | R1 | [`uc03`](./sequence/uc03-efetuar-login.puml) |
+| UC04 | Consultar Extrato | **Lab04S01** | [`uc04`](./sequence/uc04-consultar-extrato.puml) |
+| UC05 | Enviar Moedas | **Lab04S01** | [`uc05`](./sequence/uc05-enviar-moedas.puml) |
+| UC06 | Listar Vantagens | **Lab04S02** | [`uc06`](./sequence/uc06-listar-vantagens.puml) |
+| UC07 | Cadastrar Vantagem | **Lab04S02** | [`uc07`](./sequence/uc07-cadastrar-vantagem.puml) |
+| UC08 | Trocar Moedas por Vantagem (Resgate) | Lab04S03 | [`uc08`](./sequence/uc08-resgatar-vantagem.puml) |
+| UC09 | Enviar Notificação por E-mail `«include»` | **Lab04S01** | [`uc09`](./sequence/uc09-enviar-notificacao.puml) |
+
+---
+
+### UC01 · Cadastrar Aluno
+Carrega instituições/cursos pré-cadastrados, valida duplicidade de CPF e login,
+aplica *hash* BCrypt e cria `Aluno` + `Endereco` + `CarteiraMoedas`.
+
+![UC01 - Cadastrar Aluno](./sequence/out/uc01-cadastrar-aluno.png)
+
+### UC02 · Cadastrar Empresa Parceira
+Cadastro da empresa (CNPJ, nome fantasia, site) com carteira própria.
+
+![UC02 - Cadastrar Empresa](./sequence/out/uc02-cadastrar-empresa.png)
+
+### UC03 · Efetuar Login (JWT)
+Autenticação *stateless*: verificação BCrypt e emissão de **JWT** assinado
+(RS256) com `userId`, `nome` e `groups = [tipoUsuario]`.
+
+![UC03 - Efetuar Login](./sequence/out/uc03-efetuar-login.png)
+
+### UC04 · Consultar Extrato — *Lab04S01*
+Saldo + histórico polimórfico de `TransacaoMoeda` (envio, resgate, crédito
+semestral) para professores e alunos.
+
+![UC04 - Consultar Extrato](./sequence/out/uc04-consultar-extrato.png)
+
+### UC05 · Enviar Moedas — *Lab04S01*
+Operação `@Transactional`: debita o professor, credita o aluno, registra duas
+transações e dispara **dois e-mails** — recebimento (aluno) e comprovante
+(professor), cada um com seu template dedicado.
+
+![UC05 - Enviar Moedas](./sequence/out/uc05-enviar-moedas.png)
+
+### UC06 · Listar Vantagens — *Lab04S02*
+Catálogo de vantagens ativas exibido ao aluno como grade de `VantagemCard`.
+
+![UC06 - Listar Vantagens](./sequence/out/uc06-listar-vantagens.png)
+
+### UC07 · Cadastrar Vantagem — *Lab04S02*
+Empresa parceira cadastra uma vantagem (descrição, foto, custo em moedas).
+
+![UC07 - Cadastrar Vantagem](./sequence/out/uc07-cadastrar-vantagem.png)
+
+### UC08 · Trocar Moedas por Vantagem (Resgate) — *Lab04S03*
+Debita o saldo do aluno, gera cupom único com validade e notifica aluno (cupom)
+e empresa (conferência) com o mesmo código.
+
+![UC08 - Resgatar Vantagem](./sequence/out/uc08-resgatar-vantagem.png)
+
+### UC09 · Enviar Notificação por E-mail `«include»` — *Lab04S01*
+Sub-fluxo reutilizável invocado por UC05 e UC08. Renderiza um template Qute
+type-safe e envia via `Mailer` (ou `MockMailbox` em desenvolvimento).
+
+![UC09 - Enviar Notificação](./sequence/out/uc09-enviar-notificacao.png)
+
+---
+
+## 🔁 Como regenerar
+
+Os PNG/SVG em [`sequence/out/`](./sequence/) são gerados a partir dos `.puml`:
+
+```bash
+cd diagrams/sequence
+# requer Java + plantuml.jar (https://plantuml.com/download)
+java -jar plantuml.jar -charset UTF-8 -tpng -o out uc*.puml geral.puml
+java -jar plantuml.jar -charset UTF-8 -tsvg -o out uc*.puml geral.puml
 ```
------------------------------------------------------------------------------------------------------------------
-### UC03 - Efetuar Login
 
+O tema visual compartilhado fica em [`sequence/_style.puml`](./sequence/_style.puml)
+(incluído por todos os diagramas via `!include`).
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as Usuário
-    participant S as Sistema StudentPay
-    
-    U->>S: Insere credenciais (Email/CPF e Senha)
-    S->>S: Busca usuário no banco de dados
-    S->>S: Verifica hash da senha
-    
-    alt Credenciais corretas
-        S->>S: Inicia sessão (Token/Session)
-        S-->>U: Redireciona para o painel principal
-    else Credenciais incorretas
-        S-->>U: Exibe erro de "Usuário ou senha inválidos"
-    end
-
-        
-```
------------------------------------------------------------------------------------------------------------------
-
-### UC04 - Consultar Extrato
-
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as Usuário (Professor/Aluno)
-    participant S as Sistema StudentPay
-    
-    Note over U, S: Pré-condição: <<include>> UC03 - Efetuar Login
-    U->>S: Solicita página de extrato
-    S->>S: Consulta saldo atual do Usuário
-    S->>S: Busca histórico de transações vinculadas
-    S-->>U: Exibe saldo e lista de transações detalhada
-```
------------------------------------------------------------------------------------------------------------------
-### UC05 - Enviar Moedas
-
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor P as Professor
-    participant S as Sistema StudentPay
-    actor E as Sistema de E-mail
-    
-    Note over P, S: Pré-condição: <<include>> UC03 - Efetuar Login
-    P->>S: Seleciona aluno, informa valor e motivo
-    S->>S: Verifica saldo do Professor
-    
-    alt Saldo Suficiente
-        S->>S: Deduz moedas do Professor
-        S->>S: Adiciona moedas ao Aluno
-        S->>S: Registra transação e motivo
-        S-->>P: Confirmação de envio com sucesso
-        
-        Note over S, E: <<include>> UC08 - Enviar Notificação
-        S->>E: Solicita envio de notificação de recebimento para o Aluno
-    else Saldo Insuficiente
-        S-->>P: Exibe erro de "Saldo insuficiente"
-    end
-```
------------------------------------------------------------------------------------------------------------------
-
-
-### UC06 - Trocar Moedas por Vantagem
-
-
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor A as Aluno
-    participant S as Sistema StudentPay
-    actor E as Sistema de E-mail
-    
-    Note over A, S: Pré-condição: <<include>> UC03 - Efetuar Login
-    A->>S: Visualiza vantagens e seleciona uma
-    S->>S: Verifica saldo atual do Aluno
-    
-    alt Saldo Suficiente
-        S->>S: Deduz valor da vantagem do saldo
-        S->>S: Gera código único (cupom)
-        S->>S: Registra transação de resgate
-        S-->>A: Confirmação de resgate e exibe código
-        
-        Note over S, E: <<include>> UC08 - Enviar Notificação
-        S->>E: Envia e-mail ao Aluno com código do cupom
-        S->>E: Envia e-mail à Empresa Parceira com código para conferência
-    else Saldo Insuficiente
-        S-->>A: Exibe erro de "Saldo insuficiente"
-    end
-```
------------------------------------------------------------------------------------------------------------------
-
-
-
-### UC07 - Cadastrar Vantagem
-
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor E as Empresa Parceira
-    participant S as Sistema StudentPay
-    
-    Note over E, S: Pré-condição: <<include>> UC03 - Efetuar Login
-    E->>S: Solicita adição de nova vantagem
-    S-->>E: Retorna formulário de vantagem
-    E->>S: Envia dados (Descrição, Foto do produto, Custo em moedas)
-    S->>S: Valida informações e imagem
-    S->>S: Salva vantagem no catálogo
-    S-->>E: Confirmação de cadastro da vantagem
-```
------------------------------------------------------------------------------------------------------------------
-
-
-
-### UC08 - Enviar Notificação por E-mail
-
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant S as Sistema StudentPay
-    actor E as Sistema de E-mail
-    actor D as Destinatário (Aluno/Parceiro)
-    
-    Note over S, E: Este caso é invocado internamente por outros UCs
-    S->>S: Prepara payload do e-mail (Template, Variáveis, Código/Motivo)
-    S->>E: Dispara requisição de envio (API/SMTP)
-    E->>D: Entrega e-mail na caixa de entrada
-    E-->>S: Retorna status de envio (Sucesso/Falha)
-    S->>S: Registra log de notificação
-```
------------------------------------------------------------------------------------------------------------------
-
-
-
-### UC09 - Recuperar Senha
-
-
-```mermaid
-sequenceDiagram
-    autonumber
-    actor U as Usuário
-    participant S as Sistema StudentPay
-    actor E as Sistema de E-mail
-    
-    Note over U, S: Ponto de extensão de: UC03 - Efetuar Login
-    U->>S: Clica em "Esqueci minha senha" e informa e-mail/CPF
-    S->>S: Busca usuário na base de dados
-    
-    alt Usuário Encontrado
-        S->>S: Gera token/link temporário de recuperação
-        S->>E: Solicita envio do link de recuperação
-        E->>U: Entrega e-mail com instruções
-        S-->>U: Exibe aviso: "Se o cadastro existir, um e-mail foi enviado"
-    else Usuário Não Encontrado
-        S-->>U: Exibe aviso: "Se o cadastro existir, um e-mail foi enviado" 
-    end
-    
-    U->>S: Acessa o link de recuperação
-    S-->>U: Exibe formulário de nova senha
-    U->>S: Insere e confirma nova senha
-    S->>S: Atualiza hash da senha no banco
-    S-->>U: Mensagem de "Senha alterada com sucesso"
-```
-    
+> O **Diagrama de Sequência Geral** (Lab04S03) está em
+> [`sequence_diagram.md`](./sequence_diagram.md).

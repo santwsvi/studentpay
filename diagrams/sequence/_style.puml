@@ -1,0 +1,75 @@
+' ============================================================================
+'  StudentPay — Tema compartilhado dos Diagramas de Sequência
+'  Release 2 · Lab04S02
+'  Incluído por cada diagrama com:  !include _style.puml
+'  (arquivo de fragmento — NÃO deve conter @startuml/@enduml)
+' ============================================================================
+
+' --- Paleta por camada da arquitetura MVC (alinhada ao README/Componentes) ---
+!define COR_SPA         #E3F2FD
+!define COR_CONTROLLER  #DCEDC8
+!define COR_SERVICE     #FFF9C4
+!define COR_EMAIL_SVC   #FFE0B2
+!define COR_REPO        #E0F7FA
+!define COR_DB          #F3E5F5
+!define COR_SMTP        #FCE4EC
+
+skinparam backgroundColor #FFFFFF
+skinparam shadowing false
+skinparam defaultFontName Segoe UI
+skinparam defaultFontSize 13
+skinparam roundCorner 8
+skinparam maxMessageSize 220
+skinparam wrapWidth 220
+
+skinparam sequence {
+    ArrowColor #1A1A2E
+    ArrowThickness 1.1
+    ArrowFontColor #1A1A2E
+
+    LifeLineBorderColor #C7CCD1
+    LifeLineBackgroundColor #F8F9FA
+
+    ParticipantBorderColor #1A1A2E
+    ParticipantFontColor #1A1A2E
+    ParticipantFontStyle bold
+    ParticipantPadding 18
+    BoxPadding 12
+
+    ActorBorderColor #E94560
+    ActorBackgroundColor #FDECEF
+    ActorFontColor #1A1A2E
+    ActorFontStyle bold
+
+    BoxBorderColor #6C63FF
+    BoxBackgroundColor #F6F5FF
+    BoxFontColor #4B45B8
+    BoxFontStyle bold
+
+    GroupBorderColor #6C63FF
+    GroupBackgroundColor #EFEEFF
+    GroupHeaderFontColor #1A1A2E
+    GroupFontColor #4B45B8
+
+    DividerBackgroundColor #1A1A2E
+    DividerBorderColor #1A1A2E
+    DividerFontColor #FFFFFF
+}
+
+skinparam note {
+    BackgroundColor #FFF7E6
+    BorderColor #F5A623
+    FontColor #5C4400
+}
+
+skinparam database {
+    BackgroundColor COR_DB
+    BorderColor #6A1B9A
+}
+
+skinparam titleFontSize 17
+skinparam titleFontColor #1A1A2E
+skinparam titleFontStyle bold
+
+skinparam footerFontColor #ADB5BD
+skinparam footerFontSize 10

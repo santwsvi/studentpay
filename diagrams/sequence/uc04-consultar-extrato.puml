@@ -1,0 +1,47 @@
+@startuml uc04-consultar-extrato
+!include _style.puml
+title UC04 · Consultar Extrato (Professor e Aluno)
+footer StudentPay · Release 2 · Lab04S01 — Diagrama de Sequência
+autonumber "<b>00"
+
+actor "Usuário\n(Professor · Aluno)" as U
+participant "React SPA\n(Dashboard)" as SPA COR_SPA
+
+box "Quarkus · Backend (MVC)"
+    participant "Professor/Vantagem\nController «control»" as CTRL COR_CONTROLLER
+    participant "Professor/Vantagem\nService «service»" as SVC COR_SERVICE
+    participant "Carteira/Transacao\nRepository «repository»" as REPO COR_REPO
+end box
+
+database "PostgreSQL" as DB COR_DB
+
+note over U, CTRL : Pré-condição «include» UC03 — requisição autenticada (Bearer JWT)
+
+U -> SPA : Acessa o painel / aba Extrato
+SPA -> CTRL : GET /api/{professores|vantagens}/extrato\nAuthorization: Bearer <jwt>
+activate CTRL
+CTRL -> CTRL : @RolesAllowed valida tipo no token\nuserId = jwt.getClaim("userId")
+CTRL -> SVC : consultarExtrato(userId)
+activate SVC
+SVC -> REPO : carteira.findByUsuarioId(userId)
+REPO -> DB : SELECT carteira WHERE usuario_id = ?
+DB --> REPO
+REPO --> SVC
+SVC -> REPO : transacoes.findByCarteiraId(carteiraId)
+REPO -> DB : SELECT transacoes ORDER BY data_hora DESC
+DB --> REPO
+REPO --> SVC
+SVC -> SVC : Monta ExtratoResponse\n(saldoAtual + List<TransacaoDTO>)
+note right of SVC
+    Polimorfismo de TransacaoMoeda:
+    ENVIO → contraparte = remetente/destinatário
+    RESGATE → contraparte = vantagem
+    CREDITO_SEMESTRAL → "crédito do sistema"
+end note
+SVC --> CTRL : ExtratoResponse
+deactivate SVC
+CTRL --> SPA : 200 OK { saldoAtual, transacoes[] }
+deactivate CTRL
+SPA --> U : Renderiza saldo (StatCard) e extrato (ExtratoTable)
+
+@enduml

@@ -1,0 +1,71 @@
+@startuml uc01-cadastrar-aluno
+!include _style.puml
+title UC01 · Cadastrar Aluno
+footer StudentPay · Release 2 · Lab04S02 — Diagrama de Sequência
+autonumber "<b>00"
+
+actor "Aluno" as A
+participant "React SPA\n(CadastroAluno)" as SPA COR_SPA
+
+box "Quarkus · Backend (MVC)"
+    participant "InstituicaoController\n«control»" as ICTRL COR_CONTROLLER
+    participant "AlunoController\n«control»" as CTRL COR_CONTROLLER
+    participant "AlunoService\n«service»" as SVC COR_SERVICE
+    participant "Repositories\n«repository»\n(Aluno · Instituicao · Curso)" as REPO COR_REPO
+end box
+
+database "PostgreSQL" as DB COR_DB
+
+== Carregar instituições e cursos pré-cadastrados ==
+A -> SPA : Abre formulário de cadastro
+SPA -> ICTRL : GET /api/instituicoes
+activate ICTRL
+ICTRL -> REPO : listAll()
+REPO -> DB : SELECT instituicoes
+DB --> REPO
+REPO --> ICTRL
+ICTRL --> SPA : 200 OK [instituições]
+deactivate ICTRL
+A -> SPA : Seleciona instituição
+SPA -> ICTRL : GET /api/instituicoes/{id}/cursos
+activate ICTRL
+ICTRL -> REPO : findByInstituicaoId(id)
+REPO -> DB : SELECT cursos
+DB --> REPO
+REPO --> ICTRL
+ICTRL --> SPA : 200 OK [cursos]
+deactivate ICTRL
+
+== Submeter cadastro ==
+A -> SPA : Preenche nome, email, CPF, RG,\nendereço, instituição e curso
+SPA -> SPA : Validação client-side
+SPA -> CTRL : POST /api/alunos\n(CadastroAlunoRequest)
+activate CTRL
+CTRL -> CTRL : @Valid · Bean Validation
+CTRL -> SVC : cadastrar(req)
+activate SVC
+SVC -> REPO : findByCpf(cpf) / findByLogin(login)
+REPO -> DB : SELECT
+DB --> REPO
+REPO --> SVC
+
+alt CPF ou login já cadastrado
+    SVC --> CTRL : BadRequestException
+    CTRL --> SPA : 400 { error }
+    SPA --> A : Exibe mensagem de erro
+else Dados válidos
+    SVC -> REPO : findInstituicao / findCurso
+    SVC -> SVC : BcryptUtil.bcryptHash(senha)
+    SVC -> SVC : new Aluno + Endereco + CarteiraMoedas
+    SVC -> REPO : persist(aluno)
+    REPO -> DB : INSERT usuario · aluno · carteira
+    DB --> REPO
+    REPO --> SVC
+    SVC --> CTRL : Aluno
+    deactivate SVC
+    CTRL --> SPA : 201 Created
+    deactivate CTRL
+    SPA --> A : Sucesso → redireciona para Login
+end
+
+@enduml

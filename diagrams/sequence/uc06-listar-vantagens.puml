@@ -1,0 +1,41 @@
+@startuml uc06-listar-vantagens
+!include _style.puml
+title UC06 · Listar Vantagens (Aluno)
+footer StudentPay · Release 2 · Lab04S02 — Diagrama de Sequência
+autonumber "<b>00"
+
+actor "Aluno" as A
+participant "React SPA\n(DashboardAluno)" as SPA COR_SPA
+
+box "Quarkus · Backend (MVC)"
+    participant "VantagemController\n«control»" as CTRL COR_CONTROLLER
+    participant "VantagemService\n«service»" as SVC COR_SERVICE
+    participant "VantagemRepository\n«repository»" as REPO COR_REPO
+end box
+
+database "PostgreSQL" as DB COR_DB
+
+note over A, CTRL : Pré-condição «include» UC03 — requisição autenticada (Bearer JWT)
+
+A -> SPA : Acessa o painel do aluno
+SPA -> CTRL : GET /api/vantagens
+activate CTRL
+CTRL -> SVC : listarAtivas()
+activate SVC
+SVC -> REPO : findAtivas()
+REPO -> DB : SELECT vantagens WHERE ativa = true
+DB --> REPO
+REPO --> SVC
+SVC --> CTRL : List<Vantagem>
+deactivate SVC
+CTRL --> SPA : 200 OK [ { descricao, fotoUrl, custoMoedas } ]
+deactivate CTRL
+SPA -> SPA : Monta grade de VantagemCard
+
+alt Catálogo vazio
+    SPA --> A : EmptyState "Nenhuma vantagem disponível"
+else Há vantagens ativas
+    SPA --> A : Exibe catálogo (foto · descrição · custo · botão Resgatar)
+end
+
+@enduml
