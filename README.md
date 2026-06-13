@@ -30,7 +30,8 @@
 ![Tailwind](https://img.shields.io/badge/Tailwind-4.2.4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16+-336791?style=for-the-badge&logo=postgresql&logoColor=white)
 ![JWT](https://img.shields.io/badge/Auth-JWT-000000?style=for-the-badge&logo=jsonwebtokens&logoColor=white)
-[![Sprint](https://img.shields.io/badge/Sprint-03%20concluída-21C25E?style=for-the-badge)](./)
+[![Release](https://img.shields.io/badge/Release%202-Lab04S02-21C25E?style=for-the-badge)](./)
+![Qute](https://img.shields.io/badge/E--mail-Qute%20HTML-FF6B81?style=for-the-badge)
 
 ---
 
@@ -75,6 +76,7 @@ O sistema foi concebido para atender às necessidades de **três tipos de atores
 - [x] Cadastro e autenticação de alunos, professores e empresas parceiras (JWT)
 - [x] Crédito semestral automático de 1.000 moedas por professor (acumulável)
 - [x] Envio de moedas professor → aluno com motivo obrigatório
+- [x] Notificação por e-mail em HTML (Qute) com templates dedicados: **comprovante para o professor** e **recebimento para o aluno**
 - [x] CRUD de vantagens por empresa parceira (descrição, foto, custo em moedas)
 - [x] Resgate de vantagens com geração de cupom único e notificação por e-mail
 - [x] Extrato completo de transações (envios, resgates, créditos)
@@ -196,6 +198,7 @@ sequenceDiagram
 | RESTEasy (JAX-RS) | — | Camada REST |
 | SmallRye JWT | — | Autenticação stateless |
 | Quarkus Mailer | — | Notificações por e-mail |
+| Qute | — | Templates HTML type-safe de e-mail (`@CheckedTemplate`) |
 | PostgreSQL | 16+ | Banco relacional (Dev Services via container) |
 | React | 19.0.0 | UI declarativa |
 | Vite | 6.3.1 | Build tool + dev server |
@@ -238,7 +241,12 @@ studentpay/
 │   │   └── config/                    # GlobalExceptionMapper
 │   └── src/main/resources/
 │       ├── application.properties
-│       └── import.sql                 # Seed data
+│       ├── import.sql                 # Seed data
+│       └── templates/emails/          # Templates HTML de e-mail (Qute)
+│           ├── envioMoedasAluno.html       # recebimento → aluno
+│           ├── envioMoedasProfessor.html   # comprovante → professor
+│           ├── resgateAluno.html           # cupom → aluno
+│           └── resgateEmpresa.html         # conferência → empresa
 ├── frontend/                          # SPA React 19 (Vite 6)
 │   └── src/
 │       ├── components/
@@ -277,7 +285,10 @@ studentpay/
 │   ├── class_diagram_description.md
 │   ├── component_diagram.md
 │   ├── er_conceptual.md
-│   └── er_diagram.md
+│   ├── er_diagram.md
+│   ├── sequence_diagrams_uc.md        # Índice — 1 diagrama por caso de uso
+│   ├── sequence_diagram.md            # Diagrama de Sequência Geral
+│   └── sequence/                      # Fontes PlantUML (.puml) + PNG/SVG (out/)
 ├── docs/                              # Documentação adicional
 └── README.md
 ```
@@ -294,6 +305,29 @@ studentpay/
 | Maven | 3.9 | `mvn -version` |
 | Node.js | 20 | `node -v` |
 | Docker/Podman | — | Para PostgreSQL via Dev Services |
+
+### 🐳 Execução com Docker (recomendado)
+
+Requer **Docker + Docker Compose**. Um único comando sobe banco, backend, frontend e o servidor de e-mail (Mailpit):
+
+```bash
+make up           # equivale a: docker compose up -d --build
+```
+
+| Serviço | URL |
+|---------|-----|
+| Frontend (SPA) | http://localhost:5173 |
+| Backend (API) | http://localhost:8080 |
+| **Mailpit** (caixa de e-mails) | http://localhost:8025 |
+
+Com o Mailpit, os e-mails de **envio de moedas** (aluno + professor) e de **resgate** (aluno + empresa) ficam visíveis no navegador. Outros atalhos:
+
+```bash
+make logs         # acompanha os logs
+make down         # derruba os serviços (mantém o banco)
+make clean        # derruba e apaga o volume do banco
+make help         # lista todos os alvos
+```
 
 ### Backend
 
@@ -349,16 +383,28 @@ Todos os diagramas estão na pasta [`diagrams/`](./diagrams/):
 | Componentes | `component_diagram.md` | Mermaid |
 | ER Conceitual | `er_conceptual.md` | Mermaid |
 | ER Relacional | `er_diagram.md` | Mermaid |
+| **Sequência (por caso de uso)** | `sequence_diagrams_uc.md` + `sequence/*.puml` | **PlantUML** (PNG/SVG) |
+| **Sequência Geral** | `sequence_diagram.md` + `sequence/geral.puml` | **PlantUML** (PNG/SVG) |
 
 ---
 
 ## 🗺️ Roadmap de Sprints
 
+### Release 01 — Modelagem e CRUDs base
+
 | Sprint | Entregáveis | Status |
 |--------|-------------|--------|
-| **Sprint 01** | Diagrama de Casos de Uso · Histórias de Usuário · Diagrama de Classes · Diagrama de Componentes | ✅ Concluída |
-| **Sprint 02** | Modelo ER · Estratégia ORM (Hibernate/Panache) · CRUDs de Aluno e Empresa (front + back) · Autenticação JWT | ✅ Concluída |
-| **Sprint 03** | CRUDs finais · Módulo Professor (envio de moedas, extrato) · Módulo Vantagens (CRUD + resgate) · Notificação por e-mail · Redesign completo do frontend · Apresentação da arquitetura | ✅ Concluída |
+| **Lab03S01** | Diagrama de Casos de Uso · Histórias de Usuário · Diagrama de Classes · Diagrama de Componentes | ✅ Concluída |
+| **Lab03S02** | Modelo ER · Estratégia ORM (Hibernate/Panache) · CRUDs de Aluno e Empresa (front + back) · Autenticação JWT | ✅ Concluída |
+| **Lab03S03** | CRUDs de Aluno e Empresa (versão final) · apresentação da arquitetura e camada de persistência | ✅ Concluída |
+
+### Release 02 — Casos de uso transacionais
+
+| Sprint | Entregáveis | Status |
+|--------|-------------|--------|
+| **Lab04S01** | Envio de moedas · Consulta de extrato (professor e aluno) · **E-mails de confirmação** (template para professor + template para aluno) | ✅ Concluída |
+| **Lab04S02** | **Diagramas de Sequência** (um por caso de uso, em PlantUML) · Cadastro de vantagens (empresa) · Listagem de vantagens (aluno) | ✅ Concluída |
+| **Lab04S03** | Diagrama de Sequência Geral · Troca de vantagens (resgate pelo aluno) | ✅ Concluída |
 
 ---
 
