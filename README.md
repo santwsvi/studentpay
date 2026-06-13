@@ -412,6 +412,7 @@ Todos os diagramas estão na pasta [`diagrams/`](./diagrams/):
 
 | Nome | GitHub |
 |------|--------|
+| Gabriel Andrade Nogueira | [@santwsvi](https://github.com/gabrielnog2) |
 | Victor Gabriel Santos Rocha | [@santwsvi](https://github.com/santwsvi) |
 
 ---
@@ -437,5 +438,5 @@ Professor: **João Paulo Carneiro Aramuni**
 ---
 
 <div align="center">
-  Feito com ☕ e 🪙 por Victor Gabriel · PUC Minas · 2026
+  Feito com ☕ e 🪙 por Gabriel Nogueira Victor Gabriel · PUC Minas · 2026
 </div>
