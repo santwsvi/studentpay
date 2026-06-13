@@ -59,7 +59,10 @@ public class ProfessorService {
         recebimento.setDataHora(LocalDateTime.now());
         transacaoRepository.persist(recebimento);
 
-        emailService.notificarGanhoMoedas(aluno, professor, req.quantidade, req.motivo);
+        // Release 2 — Lab04S01: notifica o aluno (recebimento) e o professor (comprovante de envio),
+        // cada um com seu template dedicado, refletindo o saldo já atualizado.
+        emailService.notificarRecebimentoAluno(aluno, professor, req.quantidade, req.motivo, carteiraAluno.getSaldoAtual());
+        emailService.notificarEnvioProfessor(professor, aluno, req.quantidade, req.motivo, carteiraProfessor.getSaldoAtual());
 
         return envio;
     }

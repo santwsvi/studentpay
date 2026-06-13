@@ -94,7 +94,8 @@ public class VantagemService {
         resgate.setDataHora(LocalDateTime.now());
         transacaoRepository.persist(resgate);
 
-        emailService.notificarResgate(aluno, vantagem.getEmpresa(), vantagem, codigo);
+        emailService.notificarResgate(aluno, vantagem.getEmpresa(), vantagem, codigo,
+                carteira.getSaldoAtual(), resgate.getExpiraEm());
 
         return resgate;
     }

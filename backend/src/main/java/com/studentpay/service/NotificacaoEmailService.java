@@ -6,68 +6,85 @@ import com.studentpay.model.Professor;
 import com.studentpay.model.Vantagem;
 import io.quarkus.mailer.Mail;
 import io.quarkus.mailer.Mailer;
+import io.quarkus.qute.CheckedTemplate;
+import io.quarkus.qute.TemplateInstance;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
+/**
+ * Serviço de notificação por e-mail.
+ *
+ * <p>As mensagens são montadas a partir de templates HTML type-safe do Qute
+ * ({@code src/main/resources/templates/emails}). Cada caso de uso possui um
+ * template dedicado, conforme exigido pela Release 2:
+ * <ul>
+ *   <li>Envio de moedas → template para o <b>professor</b> (comprovante) e para o <b>aluno</b> (recebimento);</li>
+ *   <li>Resgate de vantagem → template para o <b>aluno</b> (cupom) e para a <b>empresa</b> (conferência).</li>
+ * </ul>
+ */
 @ApplicationScoped
 public class NotificacaoEmailService {
 
-    @Inject Mailer mailer;
+    private static final DateTimeFormatter VALIDADE_FMT =
+            DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
-    public void notificarGanhoMoedas(Aluno aluno, Professor professor, int quantidade, String motivo) {
-        String assunto = "StudentPay - Você recebeu " + quantidade + " moedas!";
-        String corpo = String.format(
-                """
-                Olá, %s!
+    @Inject
+    Mailer mailer;
 
-                Você recebeu %d moedas do professor %s.
-                Motivo: %s
+    /**
+     * Templates HTML validados em tempo de compilação. O nome de cada método
+     * mapeia para o arquivo {@code templates/emails/<nome>.html} e os parâmetros
+     * são checados contra as variáveis usadas no template.
+     */
+    @CheckedTemplate(basePath = "emails")
+    static class Templates {
+        static native TemplateInstance envioMoedasAluno(
+                String alunoNome, String professorNome, int quantidade, String motivo, int saldoAtual);
 
-                Acesse o sistema para conferir seu saldo atualizado.
+        static native TemplateInstance envioMoedasProfessor(
+                String professorNome, String alunoNome, int quantidade, String motivo, int saldoRestante);
 
-                — StudentPay
-                """,
-                aluno.getNome(), quantidade, professor.getNome(), motivo
-        );
+        static native TemplateInstance resgateAluno(
+                String alunoNome, String vantagemDescricao, int custoMoedas, String codigo, String validade, int saldoRestante);
 
-        mailer.send(Mail.withText(aluno.getEmail(), assunto, corpo));
+        static native TemplateInstance resgateEmpresa(
+                String empresaNome, String alunoNome, String vantagemDescricao, int custoMoedas, String codigo, String validade);
     }
 
-    public void notificarResgate(Aluno aluno, EmpresaParceira empresa, Vantagem vantagem, String codigo) {
-        String assuntoAluno = "StudentPay - Cupom de resgate gerado!";
-        String corpoAluno = String.format(
-                """
-                Olá, %s!
+    /** Notifica o aluno de que recebeu moedas de um professor. */
+    public void notificarRecebimentoAluno(Aluno aluno, Professor professor, int quantidade, String motivo, int saldoAtual) {
+        String html = Templates.envioMoedasAluno(
+                aluno.getNome(), professor.getNome(), quantidade, motivo, saldoAtual).render();
+        mailer.send(Mail.withHtml(aluno.getEmail(),
+                "StudentPay · Você recebeu " + quantidade + " moedas 🪙", html));
+    }
 
-                Você resgatou a vantagem: %s
-                Custo: %d moedas
-                Código do cupom: %s
+    /** Envia ao professor o comprovante de envio de moedas. */
+    public void notificarEnvioProfessor(Professor professor, Aluno aluno, int quantidade, String motivo, int saldoRestante) {
+        String html = Templates.envioMoedasProfessor(
+                professor.getNome(), aluno.getNome(), quantidade, motivo, saldoRestante).render();
+        mailer.send(Mail.withHtml(professor.getEmail(),
+                "StudentPay · Comprovante de envio de " + quantidade + " moedas", html));
+    }
 
-                Apresente este código na empresa parceira para retirar seu benefício.
+    /** Notifica aluno (cupom) e empresa (conferência) sobre um resgate de vantagem. */
+    public void notificarResgate(Aluno aluno, EmpresaParceira empresa, Vantagem vantagem,
+                                 String codigo, int saldoRestante, LocalDateTime expiraEm) {
+        String validade = expiraEm != null ? VALIDADE_FMT.format(expiraEm) : "—";
 
-                — StudentPay
-                """,
-                aluno.getNome(), vantagem.getDescricao(), vantagem.getCustoMoedas(), codigo
-        );
+        String htmlAluno = Templates.resgateAluno(
+                aluno.getNome(), vantagem.getDescricao(), vantagem.getCustoMoedas(),
+                codigo, validade, saldoRestante).render();
+        mailer.send(Mail.withHtml(aluno.getEmail(),
+                "StudentPay · Seu cupom de resgate: " + codigo, htmlAluno));
 
-        mailer.send(Mail.withText(aluno.getEmail(), assuntoAluno, corpoAluno));
-
-        String assuntoEmpresa = "StudentPay - Novo resgate de vantagem!";
-        String corpoEmpresa = String.format(
-                """
-                Olá, %s!
-
-                O aluno %s resgatou a vantagem: %s
-                Código de conferência: %s
-
-                Por favor, verifique este código ao realizar a entrega do benefício.
-
-                — StudentPay
-                """,
-                empresa.getNomeFantasia() != null ? empresa.getNomeFantasia() : empresa.getNome(),
-                aluno.getNome(), vantagem.getDescricao(), codigo
-        );
-
-        mailer.send(Mail.withText(empresa.getEmail(), assuntoEmpresa, corpoEmpresa));
+        String nomeEmpresa = empresa.getNomeFantasia() != null ? empresa.getNomeFantasia() : empresa.getNome();
+        String htmlEmpresa = Templates.resgateEmpresa(
+                nomeEmpresa, aluno.getNome(), vantagem.getDescricao(),
+                vantagem.getCustoMoedas(), codigo, validade).render();
+        mailer.send(Mail.withHtml(empresa.getEmail(),
+                "StudentPay · Novo resgate para conferência: " + codigo, htmlEmpresa));
     }
 }
