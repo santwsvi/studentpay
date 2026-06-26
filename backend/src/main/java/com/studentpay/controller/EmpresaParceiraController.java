@@ -3,6 +3,7 @@ package com.studentpay.controller;
 import com.studentpay.dto.CadastroEmpresaRequest;
 import com.studentpay.model.EmpresaParceira;
 import com.studentpay.service.EmpresaParceiraService;
+import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Path("/api/empresas")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@PermitAll
 public class EmpresaParceiraController {
 
     @Inject EmpresaParceiraService empresaService;

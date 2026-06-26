@@ -2,6 +2,7 @@ package com.studentpay.controller;
 
 import com.studentpay.dto.EnvioMoedasRequest;
 import com.studentpay.service.ProfessorService;
+import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -15,6 +16,7 @@ import java.util.UUID;
 @Path("/api/professores")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@PermitAll
 public class ProfessorController {
 
     @Inject ProfessorService professorService;

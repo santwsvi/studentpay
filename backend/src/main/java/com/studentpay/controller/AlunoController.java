@@ -3,6 +3,7 @@ package com.studentpay.controller;
 import com.studentpay.dto.CadastroAlunoRequest;
 import com.studentpay.model.Aluno;
 import com.studentpay.service.AlunoService;
+import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
@@ -13,6 +14,7 @@ import java.util.UUID;
 @Path("/api/alunos")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
+@PermitAll
 public class AlunoController {
 
     @Inject AlunoService alunoService;

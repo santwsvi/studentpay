@@ -2,6 +2,7 @@ package com.studentpay.controller;
 
 import com.studentpay.repository.InstituicaoEnsinoRepository;
 import com.studentpay.repository.CursoRepository;
+import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -10,6 +11,7 @@ import java.util.UUID;
 
 @Path("/api/instituicoes")
 @Produces(MediaType.APPLICATION_JSON)
+@PermitAll
 public class InstituicaoController {
 
     @Inject InstituicaoEnsinoRepository instituicaoRepository;
