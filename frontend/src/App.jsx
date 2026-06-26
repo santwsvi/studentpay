@@ -14,6 +14,22 @@ function PrivateRoute({ children }) {
   return user ? children : <Navigate to="/login" />
 }
 
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { Toaster } from 'sonner'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import AppLayout from './components/layout/AppLayout'
+import Login from './pages/Login'
+import CadastroAluno from './pages/CadastroAluno'
+import CadastroEmpresa from './pages/CadastroEmpresa'
+import DashboardAluno from './pages/DashboardAluno'
+import DashboardEmpresa from './pages/DashboardEmpresa'
+import DashboardProfessor from './pages/DashboardProfessor'
+
+function PrivateRoute({ children }) {
+  const { user } = useAuth()
+  return user ? children : <Navigate to="/login" />
+}
+
 function AppRoutes() {
   const { user } = useAuth()
 
