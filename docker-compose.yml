@@ -9,7 +9,7 @@ services:
       POSTGRES_PASSWORD: studentpay
       POSTGRES_DB: studentpay
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -49,7 +49,7 @@ services:
       QUARKUS_MAILER_START_TLS: "DISABLED"
       QUARKUS_MAILER_FROM: "StudentPay <no-reply@studentpay.dev>"
       # Origem do frontend (nginx) liberada no CORS
-      QUARKUS_HTTP_CORS_ORIGINS: "http://localhost:5173"
+      QUARKUS_HTTP_CORS_ORIGINS: "http://localhost:5173,http://localhost:5174,https://studentpay.vercel.app"
     ports:
       - "8080:8080"
 

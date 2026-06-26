@@ -1,0 +1,56 @@
+# render.yaml — Configuração de deploy no Render.com
+# Lab05S01: implantação na nuvem (Render para o backend + banco)
+
+services:
+  # ─── Backend (Quarkus) ────────────────────────────────────────────────────
+  - type: web
+    name: studentpay-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    envVars:
+      - key: QUARKUS_DATASOURCE_JDBC_URL
+        fromDatabase:
+          name: studentpay-db
+          property: connectionString
+      - key: QUARKUS_DATASOURCE_USERNAME
+        fromDatabase:
+          name: studentpay-db
+          property: user
+      - key: QUARKUS_DATASOURCE_PASSWORD
+        fromDatabase:
+          name: studentpay-db
+          property: password
+      - key: QUARKUS_HIBERNATE_ORM_DATABASE_GENERATION
+        value: update
+      - key: QUARKUS_HTTP_CORS
+        value: "true"
+      - key: QUARKUS_HTTP_CORS_ORIGINS
+        value: "https://studentpay.vercel.app"   # substituir pela URL real do Vercel
+      - key: QUARKUS_HTTP_CORS_METHODS
+        value: "GET,POST,PUT,DELETE,OPTIONS"
+      - key: QUARKUS_HTTP_CORS_HEADERS
+        value: "Content-Type,Authorization"
+      # E-mail (configure com seu provedor SMTP real — ex.: Resend, Brevo, Gmail)
+      - key: QUARKUS_MAILER_MOCK
+        value: "false"
+      - key: QUARKUS_MAILER_HOST
+        sync: false   # definir no painel do Render
+      - key: QUARKUS_MAILER_PORT
+        sync: false
+      - key: QUARKUS_MAILER_USERNAME
+        sync: false
+      - key: QUARKUS_MAILER_PASSWORD
+        sync: false
+      - key: QUARKUS_MAILER_START_TLS
+        value: "REQUIRED"
+      - key: QUARKUS_MAILER_FROM
+        value: "StudentPay <no-reply@studentpay.dev>"
+
+databases:
+  # ─── PostgreSQL gerenciado pelo Render ────────────────────────────────────
+  - name: studentpay-db
+    plan: free
+    databaseName: studentpay
+    user: studentpay

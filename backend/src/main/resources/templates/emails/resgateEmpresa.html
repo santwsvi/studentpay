@@ -30,6 +30,13 @@
                     <div style="font-size:12px;color:#6c757d;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;">Código de conferência</div>
                     <div style="font-size:34px;font-weight:800;color:#1a1a2e;letter-spacing:6px;font-family:'Courier New',Courier,monospace;">{codigo}</div>
                     <div style="font-size:12px;color:#6c757d;margin-top:8px;">Válido até {validade}</div>
+                    {#if qrCodeBase64}
+                    <div style="margin-top:16px;">
+                      <img src="{qrCodeBase64}" alt="QR Code do cupom {codigo}" width="130" height="130"
+                           style="display:block;margin:0 auto;border-radius:6px;background:#ffffff;padding:6px;" />
+                      <div style="font-size:11px;color:#6c757d;margin-top:6px;">Leia o QR Code para confirmar o código do aluno</div>
+                    </div>
+                    {/if}
                   </td>
                 </tr>
               </table>

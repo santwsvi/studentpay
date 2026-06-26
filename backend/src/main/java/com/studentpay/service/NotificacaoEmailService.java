@@ -33,6 +33,9 @@ public class NotificacaoEmailService {
     @Inject
     Mailer mailer;
 
+    @Inject
+    QrCodeService qrCodeService;
+
     /**
      * Templates HTML validados em tempo de compilação. O nome de cada método
      * mapeia para o arquivo {@code templates/emails/<nome>.html} e os parâmetros
@@ -47,10 +50,10 @@ public class NotificacaoEmailService {
                 String professorNome, String alunoNome, int quantidade, String motivo, int saldoRestante);
 
         static native TemplateInstance resgateAluno(
-                String alunoNome, String vantagemDescricao, int custoMoedas, String codigo, String validade, int saldoRestante);
+                String alunoNome, String vantagemDescricao, int custoMoedas, String codigo, String validade, int saldoRestante, String qrCodeBase64);
 
         static native TemplateInstance resgateEmpresa(
-                String empresaNome, String alunoNome, String vantagemDescricao, int custoMoedas, String codigo, String validade);
+                String empresaNome, String alunoNome, String vantagemDescricao, int custoMoedas, String codigo, String validade, String qrCodeBase64);
     }
 
     /** Notifica o aluno de que recebeu moedas de um professor. */
@@ -74,16 +77,19 @@ public class NotificacaoEmailService {
                                  String codigo, int saldoRestante, LocalDateTime expiraEm) {
         String validade = expiraEm != null ? VALIDADE_FMT.format(expiraEm) : "—";
 
+        // Lab05S01: gera QR Code único com o código do cupom
+        String qrCodeBase64 = qrCodeService.gerarBase64(codigo);
+
         String htmlAluno = Templates.resgateAluno(
                 aluno.getNome(), vantagem.getDescricao(), vantagem.getCustoMoedas(),
-                codigo, validade, saldoRestante).render();
+                codigo, validade, saldoRestante, qrCodeBase64).render();
         mailer.send(Mail.withHtml(aluno.getEmail(),
                 "StudentPay · Seu cupom de resgate: " + codigo, htmlAluno));
 
         String nomeEmpresa = empresa.getNomeFantasia() != null ? empresa.getNomeFantasia() : empresa.getNome();
         String htmlEmpresa = Templates.resgateEmpresa(
                 nomeEmpresa, aluno.getNome(), vantagem.getDescricao(),
-                vantagem.getCustoMoedas(), codigo, validade).render();
+                vantagem.getCustoMoedas(), codigo, validade, qrCodeBase64).render();
         mailer.send(Mail.withHtml(empresa.getEmail(),
                 "StudentPay · Novo resgate para conferência: " + codigo, htmlEmpresa));
     }
