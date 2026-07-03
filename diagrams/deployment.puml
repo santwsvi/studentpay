@@ -1,0 +1,137 @@
+@startuml deployment
+!include ../_style.puml
+title Diagrama de Implantação · StudentPay
+footer StudentPay · Release 3 · Lab05S01 — Diagrama de Implantação
+
+skinparam node {
+    BackgroundColor #F6F5FF
+    BorderColor #6C63FF
+    FontColor #4B45B8
+    FontStyle bold
+    RoundCorner 10
+}
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #1A1A2E
+    FontColor #1A1A2E
+    FontStyle bold
+    RoundCorner 8
+}
+
+skinparam database {
+    BackgroundColor #F3E5F5
+    BorderColor #6A1B9A
+    FontColor #1A1A2E
+}
+
+skinparam artifact {
+    BackgroundColor #FFF9C4
+    BorderColor #F9A825
+    FontColor #1A1A2E
+}
+
+skinparam actor {
+    BackgroundColor #FDECEF
+    BorderColor #E94560
+    FontColor #1A1A2E
+    FontStyle bold
+}
+
+' ─── Usuários ─────────────────────────────────────────────────
+actor "Professor" as P
+actor "Aluno" as A
+actor "Empresa Parceira" as E
+
+' ─── Dispositivo do Usuário ───────────────────────────────────
+node "Dispositivo do Usuário\n«device»" as DEVICE {
+    node "Navegador Web\n«execution environment»" as BROWSER {
+        component "React SPA\n(JavaScript Bundle)" as SPA #E3F2FD
+    }
+}
+
+' ─── Vercel ───────────────────────────────────────────────────
+node "Vercel Edge Network\n«cloud · CDN»\nstudentpay-xi.vercel.app" as VERCEL {
+    component "Static Build\n(Vite · dist/)" as STATIC #E3F2FD
+    artifact "VITE_API_URL =\nhttps://studentpay-backend\n.onrender.com/api" as VERCEL_ENV
+}
+
+' ─── Render ───────────────────────────────────────────────────
+node "Render Cloud\n«cloud · PaaS»" as RENDER {
+
+    node "Web Service\n«execution environment»\nstudentpay-backend.onrender.com" as BACKEND {
+        component "Quarkus 3.17 JVM\n(Docker · eclipse-temurin:21-jre)" as QUARKUS #FFF9C4
+
+        component "Controllers\n«control»\nAuth · Professor · Vantagem\nAluno · EmpresaParceira\nInstituicao" as CTRL #DCEDC8
+
+        component "Services\n«service»\nAuth · Professor · Vantagem\nNotificacaoEmail · QrCode(ZXing)" as SVC #FFF9C4
+
+        component "Repositories\n«repository»\nPanache · JPA" as REPO #E0F7FA
+
+        artifact "privateKey.pem\npublicKey.pem\n«JWT RSA keys»" as KEYS
+    }
+
+    database "PostgreSQL 16\n«managed database»\nstudentpay-db" as PGDB {
+        component "Schema público\n(usuarios · alunos · professores\nempresas_parceiras · vantagens\ntransacoes_moeda · carteiras_moedas\ninstituicoes_ensino · cursos\nsemestres)" as SCHEMA #F3E5F5
+    }
+
+    artifact "QUARKUS_DATASOURCE_JDBC_URL\nQUARKUS_DATASOURCE_USERNAME\nQUARKUS_DATASOURCE_PASSWORD\nQUARKUS_HTTP_CORS_ORIGINS\nRESEND_API_KEY\nQUARKUS_MAILER_FROM\nQUARKUS_HIBERNATE_ORM_DATABASE_GENERATION" as RENDER_ENV
+}
+
+' ─── Resend (serviço externo) ─────────────────────────────────
+node "Resend\n«external service · SaaS»\napi.resend.com" as RESEND {
+    component "Email Delivery API\nHTTP POST /emails\n«REST · Bearer token»" as RESEND_API #FCE4EC
+}
+
+' ─── Conexões ─────────────────────────────────────────────────
+P --> BROWSER : "HTTPS"
+A --> BROWSER : "HTTPS"
+E --> BROWSER : "HTTPS"
+
+BROWSER --> VERCEL : "HTTPS\nGET /\n(SPA Bundle)"
+VERCEL --> SPA : "serve bundle\n(CDN edge)"
+
+SPA --> QUARKUS : "HTTPS · REST/JSON\nBearer JWT\nhttps://studentpay-backend\n.onrender.com/api"
+
+QUARKUS --> CTRL : "«usa»"
+CTRL --> SVC : "«usa»"
+SVC --> REPO : "«usa»"
+
+REPO --> PGDB : "JDBC · PostgreSQL\n(rede interna Render)"
+
+SVC --> RESEND_API : "HTTPS · POST /emails\n(java.net.http)\nHTML com QR Code Base64"
+
+RESEND_API --> P : "e-mail comprovante\nde envio de moedas"
+RESEND_API --> A : "e-mail recebimento\nde moedas / cupom\n+ QR Code (Lab05S01)"
+RESEND_API --> E : "e-mail conferência\nde resgate + QR Code"
+
+note right of QUARKUS
+  Quarkus 3.17.8
+  Perfil prod ativo.
+  CORS configurado via
+  variável de ambiente.
+  E-mail via Resend HTTP API
+  (sem SMTP — porta 587/465
+  bloqueada no Render free).
+end note
+
+note right of PGDB
+  Plano free do Render.
+  Conexão via JDBC URL
+  injetada como variável
+  de ambiente.
+  Schema recriado via
+  drop-and-create no boot.
+end note
+
+note right of RESEND
+  Plano gratuito: 3.000 e-mails/mês.
+  Remetente: onboarding@resend.dev
+  (sem domínio próprio verificado).
+  Chamada HTTP com
+  java.net.http.HttpClient
+  em Thread.ofVirtual —
+  não bloqueia a transação JTA.
+end note
+
+@enduml

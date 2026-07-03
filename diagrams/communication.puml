@@ -1,0 +1,124 @@
+@startuml communication
+!include ../_style.puml
+title Diagrama de Comunicação · StudentPay
+footer StudentPay · Release 3 · Lab05S01 — Diagrama de Comunicação
+
+skinparam componentStyle rectangle
+
+skinparam component {
+    BackgroundColor #FFFFFF
+    BorderColor #1A1A2E
+    FontColor #1A1A2E
+    FontStyle bold
+}
+
+skinparam interface {
+    BackgroundColor #1A1A2E
+    BorderColor #1A1A2E
+}
+
+skinparam actor {
+    BackgroundColor #FDECEF
+    BorderColor #E94560
+    FontColor #1A1A2E
+    FontStyle bold
+}
+
+skinparam rectangle {
+    BackgroundColor #F6F5FF
+    BorderColor #6C63FF
+    FontColor #4B45B8
+    FontStyle bold
+    RoundCorner 10
+}
+
+' ─── Atores ──────────────────────────────────────────────────
+actor "Professor" as P
+actor "Aluno" as A
+actor "Empresa Parceira" as E
+
+' ─── Frontend ─────────────────────────────────────────────────
+rectangle "React SPA\n«frontend»" as SPA #E3F2FD
+
+' ─── Backend (MVC) ────────────────────────────────────────────
+rectangle "Quarkus Backend\n«MVC»" {
+    rectangle "AuthController\n«control»" as AUTH #DCEDC8
+    rectangle "ProfessorController\n«control»" as PCTRL #DCEDC8
+    rectangle "VantagemController\n«control»" as VCTRL #DCEDC8
+
+    rectangle "AuthService\n«service»" as ASVC #FFF9C4
+    rectangle "ProfessorService\n«service»" as PSVC #FFF9C4
+    rectangle "VantagemService\n«service»" as VSVC #FFF9C4
+
+    rectangle "NotificacaoEmailService\n«service»" as EMAIL #FFE0B2
+    rectangle "QrCodeService\n(ZXing) «service»" as QR #FFE0B2
+
+    rectangle "Repositories\n«repository»\n(Panache · JPA)" as REPO #E0F7FA
+}
+
+' ─── Infraestrutura ───────────────────────────────────────────
+database "PostgreSQL\n«database»" as DB #F3E5F5
+rectangle "Resend API\n(java.net.http)\n«HTTP SaaS»" as RESEND #FCE4EC
+
+' ══════════════════════════════════════════════════════════════
+' Fluxo 1 · Autenticação
+' ══════════════════════════════════════════════════════════════
+P -[#1A1A2E]-> SPA : "1: login(email, senha)"
+A -[#1A1A2E]-> SPA : "1: login(email, senha)"
+E -[#1A1A2E]-> SPA : "1: login(email, senha)"
+
+SPA -[#1A1A2E]-> AUTH : "2: POST /api/auth/login"
+AUTH -[#1A1A2E]-> ASVC : "3: autenticar(req)"
+ASVC -[#1A1A2E]-> REPO : "4: findByLogin(login)"
+REPO -[#1A1A2E]-> DB : "5: SELECT usuario"
+ASVC -[#1A1A2E]-> AUTH : "6: JWT ← geraToken()"
+AUTH -[#1A1A2E]-> SPA : "7: {token, tipoUsuario}"
+
+' ══════════════════════════════════════════════════════════════
+' Fluxo 2 · Envio de Moedas (UC05)
+' ══════════════════════════════════════════════════════════════
+P -[#BA7517]-> SPA : "8: informa aluno, quantidade, motivo"
+SPA -[#BA7517]-> PCTRL : "9: POST /api/professores/enviar-moedas\n[Bearer JWT]"
+PCTRL -[#BA7517]-> PSVC : "10: enviarMoedas(professorId, req)"
+PSVC -[#BA7517]-> REPO : "11: findProfessor / findAluno / findCarteiras"
+REPO -[#BA7517]-> DB : "12: SELECT · UPDATE carteiras"
+PSVC -[#BA7517]-> REPO : "13: persist(EnvioMoedas ×2)"
+REPO -[#BA7517]-> DB : "14: INSERT transacoes_moeda"
+PSVC -[#BA7517]-> EMAIL : "15: notificarRecebimentoAluno()\nnotificarEnvioProfessor()\n[Thread.ofVirtual]"
+EMAIL -[#BA7517]-> RESEND : "16: POST /emails (HTTP)\n[Bearer RESEND_API_KEY]\ntemplate envioMoedasAluno\ntemplate envioMoedasProfessor"
+RESEND -[#BA7517]-> P : "17: e-mail comprovante de envio"
+RESEND -[#BA7517]-> A : "17: e-mail de recebimento de moedas"
+
+' ══════════════════════════════════════════════════════════════
+' Fluxo 3 · Resgate de Vantagem + QR Code (UC08 · Lab05S01)
+' ══════════════════════════════════════════════════════════════
+A -[#0F6E56]-> SPA : "18: seleciona vantagem · confirma resgate"
+SPA -[#0F6E56]-> VCTRL : "19: POST /api/vantagens/{id}/resgatar\n[Bearer JWT]"
+VCTRL -[#0F6E56]-> VSVC : "20: resgatar(alunoId, vantagemId)"
+VSVC -[#0F6E56]-> REPO : "21: findAluno / findVantagem / findCarteira"
+REPO -[#0F6E56]-> DB : "22: SELECT"
+VSVC -[#0F6E56]-> REPO : "23: persist(ResgateVantagem)\ncódigo UUID · expiraEm +30d"
+REPO -[#0F6E56]-> DB : "24: INSERT transacoes_moeda (RESGATE)"
+VSVC -[#0F6E56]-> EMAIL : "25: notificarResgate(\n  emailAluno, emailEmpresa,\n  codigo, expiraEm)\n[Thread.ofVirtual]"
+EMAIL -[#0F6E56]-> QR : "26: gerarBase64(codigo)"
+QR -[#0F6E56]-> EMAIL : "27: PNG Base64 ← ZXing QR Code"
+EMAIL -[#0F6E56]-> RESEND : "28: POST /emails (HTTP)\ntemplate resgateAluno (cupom + QR)\ntemplate resgateEmpresa (conf. + QR)"
+RESEND -[#0F6E56]-> A : "29: e-mail cupom + QR Code único"
+RESEND -[#0F6E56]-> E : "29: e-mail conferência + QR Code"
+
+note right of QR
+  Lab05S01:
+  QR Code gerado com ZXing (PNG).
+  Retornado como data URI Base64.
+  Embutido diretamente no HTML
+  do e-mail — sem URL externa.
+end note
+
+note right of RESEND
+  API HTTP pura (java.net.http).
+  Sem SMTP — funciona no Render
+  plano gratuito (portas 587/465
+  bloqueadas pelo provedor cloud).
+end note
+
+@enduml
