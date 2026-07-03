@@ -61,8 +61,12 @@ public class ProfessorService {
 
         // Release 2 — Lab04S01: notifica o aluno (recebimento) e o professor (comprovante de envio),
         // cada um com seu template dedicado, refletindo o saldo já atualizado.
-        emailService.notificarRecebimentoAluno(aluno, professor, req.quantidade, req.motivo, carteiraAluno.getSaldoAtual());
-        emailService.notificarEnvioProfessor(professor, aluno, req.quantidade, req.motivo, carteiraProfessor.getSaldoAtual());
+        try {
+            emailService.notificarRecebimentoAluno(aluno, professor, req.quantidade, req.motivo, carteiraAluno.getSaldoAtual());
+            emailService.notificarEnvioProfessor(professor, aluno, req.quantidade, req.motivo, carteiraProfessor.getSaldoAtual());
+        } catch (Exception e) {
+            System.err.println("Aviso: falha ao enviar e-mail: " + e.getMessage());
+        }
 
         return envio;
     }
