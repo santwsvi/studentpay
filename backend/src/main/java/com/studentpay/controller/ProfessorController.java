@@ -16,7 +16,6 @@ import java.util.UUID;
 @Path("/api/professores")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@PermitAll
 public class ProfessorController {
 
     @Inject ProfessorService professorService;
@@ -28,6 +27,7 @@ public class ProfessorController {
     }
 
     @POST
+    @PermitAll
     @Path("/enviar-moedas")
     @RolesAllowed("professor")
     public Response enviarMoedas(@Valid EnvioMoedasRequest req) {
@@ -37,6 +37,7 @@ public class ProfessorController {
     }
 
     @GET
+    @PermitAll
     @Path("/extrato")
     @RolesAllowed("professor")
     public Response extrato() {

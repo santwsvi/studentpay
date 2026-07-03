@@ -14,23 +14,25 @@ import java.util.UUID;
 @Path("/api/alunos")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@PermitAll
 public class AlunoController {
 
     @Inject AlunoService alunoService;
 
     @POST
+    @PermitAll
     public Response cadastrar(@Valid CadastroAlunoRequest req) {
         Aluno aluno = alunoService.cadastrar(req);
         return Response.status(Response.Status.CREATED).entity(aluno).build();
     }
 
     @GET
+    @PermitAll
     public Response listar() {
         return Response.ok(alunoService.listarTodos()).build();
     }
 
     @GET
+    @PermitAll
     @Path("/{id}")
     public Response buscarPorId(@PathParam("id") UUID id) {
         return Response.ok(alunoService.buscarPorId(id)).build();
@@ -38,12 +40,14 @@ public class AlunoController {
 
     @PUT
     @Path("/{id}")
+    @PermitAll
     public Response atualizar(@PathParam("id") UUID id, @Valid CadastroAlunoRequest req) {
         return Response.ok(alunoService.atualizar(id, req)).build();
     }
 
     @DELETE
     @Path("/{id}")
+    @PermitAll
     public Response deletar(@PathParam("id") UUID id) {
         alunoService.deletar(id);
         return Response.noContent().build();

@@ -13,12 +13,12 @@ import jakarta.ws.rs.core.Response;
 @Path("/api/auth")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@PermitAll
 public class AuthController {
 
     @Inject AuthService authService;
 
     @POST
+    @PermitAll
     @Path("/login")
     public Response login(@Valid LoginRequest req) {
         LoginResponse response = authService.autenticar(req);

@@ -11,18 +11,19 @@ import java.util.UUID;
 
 @Path("/api/instituicoes")
 @Produces(MediaType.APPLICATION_JSON)
-@PermitAll
 public class InstituicaoController {
 
     @Inject InstituicaoEnsinoRepository instituicaoRepository;
     @Inject CursoRepository cursoRepository;
 
     @GET
+    @PermitAll
     public Response listar() {
         return Response.ok(instituicaoRepository.listAll()).build();
     }
 
     @GET
+    @PermitAll
     @Path("/{id}/cursos")
     public Response listarCursos(@PathParam("id") UUID id) {
         return Response.ok(cursoRepository.findByInstituicaoId(id)).build();
