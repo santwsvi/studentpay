@@ -94,8 +94,25 @@ public class VantagemService {
         resgate.setDataHora(LocalDateTime.now());
         transacaoRepository.persist(resgate);
 
-        emailService.notificarResgate(aluno, vantagem.getEmpresa(), vantagem, codigo,
-                carteira.getSaldoAtual(), resgate.getExpiraEm());
+        // Captura dados primitivos antes do fim da transação
+        String nomeAluno      = aluno.getNome();
+        String emailAluno     = aluno.getEmail();
+        EmpresaParceira emp   = vantagem.getEmpresa();
+        String nomeEmpresa    = emp.getNomeFantasia() != null ? emp.getNomeFantasia() : emp.getNome();
+        String emailEmpresa   = emp.getEmail();
+        String descricao      = vantagem.getDescricao();
+        int custoMoedas       = vantagem.getCustoMoedas();
+        int saldoRestante     = carteira.getSaldoAtual();
+        LocalDateTime expira  = resgate.getExpiraEm();
+
+        // Envia e-mails APÓS a transação via thread separada
+        Thread.ofVirtual().start(() ->
+                emailService.notificarResgate(
+                        emailAluno, nomeAluno,
+                        emailEmpresa, nomeEmpresa,
+                        descricao, custoMoedas,
+                        codigo, expira, saldoRestante)
+        );
 
         return resgate;
     }

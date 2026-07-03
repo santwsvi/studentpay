@@ -36,7 +36,6 @@ public class ProfessorService {
                 .orElseThrow(() -> new IllegalStateException("Carteira do aluno não encontrada"));
 
         carteiraProfessor.debitar(req.quantidade);
-
         carteiraAluno.creditar(req.quantidade);
 
         EnvioMoedas envio = new EnvioMoedas();
@@ -59,14 +58,21 @@ public class ProfessorService {
         recebimento.setDataHora(LocalDateTime.now());
         transacaoRepository.persist(recebimento);
 
-        // Release 2 — Lab04S01: notifica o aluno (recebimento) e o professor (comprovante de envio),
-        // cada um com seu template dedicado, refletindo o saldo já atualizado.
-        try {
-            emailService.notificarRecebimentoAluno(aluno, professor, req.quantidade, req.motivo, carteiraAluno.getSaldoAtual());
-            emailService.notificarEnvioProfessor(professor, aluno, req.quantidade, req.motivo, carteiraProfessor.getSaldoAtual());
-        } catch (Exception e) {
-            System.err.println("Aviso: falha ao enviar e-mail: " + e.getMessage());
-        }
+        // Captura dados primitivos antes do fim da transação
+        String nomeAluno     = aluno.getNome();
+        String emailAluno    = aluno.getEmail();
+        String nomeProfessor = professor.getNome();
+        String emailProfessor = professor.getEmail();
+        int saldoAluno       = carteiraAluno.getSaldoAtual();
+        int saldoProfessor   = carteiraProfessor.getSaldoAtual();
+        int quantidade       = req.quantidade;
+        String motivo        = req.motivo;
+
+        // Envia e-mails APÓS a transação via thread separada — não bloqueia nem faz rollback
+        Thread.ofVirtual().start(() -> {
+            emailService.notificarRecebimentoAluno(emailAluno, nomeAluno, nomeProfessor, quantidade, motivo, saldoAluno);
+            emailService.notificarEnvioProfessor(emailProfessor, nomeProfessor, nomeAluno, quantidade, motivo, saldoProfessor);
+        });
 
         return envio;
     }
@@ -82,7 +88,7 @@ public class ProfessorService {
                     String contraparte = "";
                     if (t instanceof EnvioMoedas e) {
                         contraparte = e.getDestinatario().getNome();
-                    } else if (t instanceof CreditoSemestral c) {
+                    } else if (t instanceof CreditoSemestral) {
                         contraparte = "Sistema (crédito semestral)";
                     }
                     return new ExtratoResponse.TransacaoDTO(

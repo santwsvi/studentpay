@@ -1,46 +1,42 @@
 package com.studentpay.service;
 
-import com.studentpay.model.Aluno;
-import com.studentpay.model.EmpresaParceira;
-import com.studentpay.model.Professor;
-import com.studentpay.model.Vantagem;
-import io.quarkus.mailer.Mail;
-import io.quarkus.mailer.Mailer;
 import io.quarkus.qute.CheckedTemplate;
 import io.quarkus.qute.TemplateInstance;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
- * Serviço de notificação por e-mail.
+ * Serviço de notificação por e-mail via API HTTP do Resend.
  *
- * <p>As mensagens são montadas a partir de templates HTML type-safe do Qute
- * ({@code src/main/resources/templates/emails}). Cada caso de uso possui um
- * template dedicado, conforme exigido pela Release 2:
- * <ul>
- *   <li>Envio de moedas → template para o <b>professor</b> (comprovante) e para o <b>aluno</b> (recebimento);</li>
- *   <li>Resgate de vantagem → template para o <b>aluno</b> (cupom) e para a <b>empresa</b> (conferência).</li>
- * </ul>
+ * Usa HTTP puro (java.net.http) para evitar bloqueio de SMTP em ambientes cloud.
+ * Se RESEND_API_KEY não estiver configurada, os e-mails são logados e descartados.
  */
 @ApplicationScoped
 public class NotificacaoEmailService {
 
-    private static final DateTimeFormatter VALIDADE_FMT =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy");
-
-    @Inject
-    Mailer mailer;
+    private static final Logger LOG = Logger.getLogger(NotificacaoEmailService.class.getName());
+    private static final DateTimeFormatter VALIDADE_FMT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final String RESEND_URL = "https://api.resend.com/emails";
 
     @Inject
     QrCodeService qrCodeService;
 
-    /**
-     * Templates HTML validados em tempo de compilação. O nome de cada método
-     * mapeia para o arquivo {@code templates/emails/<nome>.html} e os parâmetros
-     * são checados contra as variáveis usadas no template.
-     */
+    @ConfigProperty(name = "resend.api.key", defaultValue = "")
+    String resendApiKey;
+
+    @ConfigProperty(name = "quarkus.mailer.from", defaultValue = "StudentPay <no-reply@studentpay.dev>")
+    String fromAddress;
+
     @CheckedTemplate(basePath = "emails")
     static class Templates {
         static native TemplateInstance envioMoedasAluno(
@@ -50,47 +46,89 @@ public class NotificacaoEmailService {
                 String professorNome, String alunoNome, int quantidade, String motivo, int saldoRestante);
 
         static native TemplateInstance resgateAluno(
-                String alunoNome, String vantagemDescricao, int custoMoedas, String codigo, String validade, int saldoRestante, String qrCodeBase64);
+                String alunoNome, String vantagemDescricao, int custoMoedas,
+                String codigo, String validade, int saldoRestante, String qrCodeBase64);
 
         static native TemplateInstance resgateEmpresa(
-                String empresaNome, String alunoNome, String vantagemDescricao, int custoMoedas, String codigo, String validade, String qrCodeBase64);
+                String empresaNome, String alunoNome, String vantagemDescricao,
+                int custoMoedas, String codigo, String validade, String qrCodeBase64);
     }
 
-    /** Notifica o aluno de que recebeu moedas de um professor. */
-    public void notificarRecebimentoAluno(Aluno aluno, Professor professor, int quantidade, String motivo, int saldoAtual) {
-        String html = Templates.envioMoedasAluno(
-                aluno.getNome(), professor.getNome(), quantidade, motivo, saldoAtual).render();
-        mailer.send(Mail.withHtml(aluno.getEmail(),
-                "StudentPay · Você recebeu " + quantidade + " moedas 🪙", html));
+    // ── Métodos públicos (recebem strings — sem dependência de entidades JPA) ──
+
+    public void notificarRecebimentoAluno(String emailAluno, String nomeAluno,
+                                          String nomeProfessor, int quantidade, String motivo, int saldoAtual) {
+        String html = Templates.envioMoedasAluno(nomeAluno, nomeProfessor, quantidade, motivo, saldoAtual).render();
+        enviar(emailAluno, "StudentPay · Você recebeu " + quantidade + " moedas 🪙", html);
     }
 
-    /** Envia ao professor o comprovante de envio de moedas. */
-    public void notificarEnvioProfessor(Professor professor, Aluno aluno, int quantidade, String motivo, int saldoRestante) {
-        String html = Templates.envioMoedasProfessor(
-                professor.getNome(), aluno.getNome(), quantidade, motivo, saldoRestante).render();
-        mailer.send(Mail.withHtml(professor.getEmail(),
-                "StudentPay · Comprovante de envio de " + quantidade + " moedas", html));
+    public void notificarEnvioProfessor(String emailProfessor, String nomeProfessor,
+                                        String nomeAluno, int quantidade, String motivo, int saldoRestante) {
+        String html = Templates.envioMoedasProfessor(nomeProfessor, nomeAluno, quantidade, motivo, saldoRestante).render();
+        enviar(emailProfessor, "StudentPay · Comprovante de envio de " + quantidade + " moedas", html);
     }
 
-    /** Notifica aluno (cupom) e empresa (conferência) sobre um resgate de vantagem. */
-    public void notificarResgate(Aluno aluno, EmpresaParceira empresa, Vantagem vantagem,
-                                 String codigo, int saldoRestante, LocalDateTime expiraEm) {
+    public void notificarResgate(String emailAluno, String nomeAluno,
+                                 String emailEmpresa, String nomeEmpresa,
+                                 String vantagemDescricao, int custoMoedas,
+                                 String codigo, LocalDateTime expiraEm, int saldoRestante) {
         String validade = expiraEm != null ? VALIDADE_FMT.format(expiraEm) : "—";
-
-        // Lab05S01: gera QR Code único com o código do cupom
         String qrCodeBase64 = qrCodeService.gerarBase64(codigo);
 
         String htmlAluno = Templates.resgateAluno(
-                aluno.getNome(), vantagem.getDescricao(), vantagem.getCustoMoedas(),
+                nomeAluno, vantagemDescricao, custoMoedas,
                 codigo, validade, saldoRestante, qrCodeBase64).render();
-        mailer.send(Mail.withHtml(aluno.getEmail(),
-                "StudentPay · Seu cupom de resgate: " + codigo, htmlAluno));
+        enviar(emailAluno, "StudentPay · Seu cupom de resgate: " + codigo, htmlAluno);
 
-        String nomeEmpresa = empresa.getNomeFantasia() != null ? empresa.getNomeFantasia() : empresa.getNome();
         String htmlEmpresa = Templates.resgateEmpresa(
-                nomeEmpresa, aluno.getNome(), vantagem.getDescricao(),
-                vantagem.getCustoMoedas(), codigo, validade, qrCodeBase64).render();
-        mailer.send(Mail.withHtml(empresa.getEmail(),
-                "StudentPay · Novo resgate para conferência: " + codigo, htmlEmpresa));
+                nomeEmpresa, nomeAluno, vantagemDescricao,
+                custoMoedas, codigo, validade, qrCodeBase64).render();
+        enviar(emailEmpresa, "StudentPay · Novo resgate para conferência: " + codigo, htmlEmpresa);
+    }
+
+    // ── Envio HTTP via Resend API ────────────────────────────────────────────
+
+    private void enviar(String destinatario, String assunto, String htmlBody) {
+        if (resendApiKey == null || resendApiKey.isBlank()) {
+            LOG.info("[E-mail MOCK] Para: " + destinatario + " | Assunto: " + assunto);
+            return;
+        }
+
+        String json = "{"
+                + "\"from\":\"" + escapar(fromAddress) + "\","
+                + "\"to\":[\"" + escapar(destinatario) + "\"],"
+                + "\"subject\":\"" + escapar(assunto) + "\","
+                + "\"html\":\"" + escapar(htmlBody) + "\""
+                + "}";
+
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(RESEND_URL))
+                    .header("Authorization", "Bearer " + resendApiKey)
+                    .header("Content-Type", "application/json")
+                    .POST(HttpRequest.BodyPublishers.ofString(json))
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                LOG.info("E-mail enviado para " + destinatario + " via Resend. Status: " + response.statusCode());
+            } else {
+                LOG.warning("Falha ao enviar e-mail via Resend. Status: "
+                        + response.statusCode() + " Body: " + response.body());
+            }
+        } catch (Exception e) {
+            LOG.log(Level.WARNING, "Erro ao enviar e-mail para " + destinatario + ": " + e.getMessage(), e);
+        }
+    }
+
+    private static String escapar(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t");
     }
 }
