@@ -16,20 +16,18 @@ import java.util.UUID;
 @Path("/api/vantagens")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
-@PermitAll
+
 public class VantagemController {
 
     @Inject VantagemService vantagemService;
     @Inject JsonWebToken jwt;
 
     @GET
-    @PermitAll
     public Response listarAtivas() {
         return Response.ok(vantagemService.listarAtivas()).build();
     }
 
     @GET
-    @PermitAll
     @Path("/empresa")
     @RolesAllowed("empresa")
     public Response listarPorEmpresa() {
@@ -38,7 +36,6 @@ public class VantagemController {
     }
 
     @POST
-    @PermitAll
     @RolesAllowed("empresa")
     public Response cadastrar(@Valid CadastroVantagemRequest req) {
         UUID empresaId = UUID.fromString(jwt.getClaim("userId"));
@@ -47,7 +44,6 @@ public class VantagemController {
     }
 
     @PUT
-    @PermitAll
     @Path("/{id}")
     @RolesAllowed("empresa")
     public Response atualizar(@PathParam("id") UUID id, @Valid CadastroVantagemRequest req) {
@@ -55,7 +51,6 @@ public class VantagemController {
     }
 
     @DELETE
-    @PermitAll
     @Path("/{id}")
     @RolesAllowed("empresa")
     public Response inativar(@PathParam("id") UUID id) {
@@ -64,7 +59,6 @@ public class VantagemController {
     }
 
     @POST
-    @PermitAll
     @Path("/{id}/resgatar")
     @RolesAllowed("aluno")
     public Response resgatar(@PathParam("id") UUID vantagemId) {
@@ -74,7 +68,6 @@ public class VantagemController {
     }
 
     @GET
-    @PermitAll
     @Path("/extrato")
     @RolesAllowed("aluno")
     public Response extratoAluno() {

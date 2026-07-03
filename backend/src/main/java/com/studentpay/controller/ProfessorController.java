@@ -27,7 +27,6 @@ public class ProfessorController {
     }
 
     @POST
-    @PermitAll
     @Path("/enviar-moedas")
     @RolesAllowed("professor")
     public Response enviarMoedas(@Valid EnvioMoedasRequest req) {
@@ -37,7 +36,6 @@ public class ProfessorController {
     }
 
     @GET
-    @PermitAll
     @Path("/extrato")
     @RolesAllowed("professor")
     public Response extrato() {
